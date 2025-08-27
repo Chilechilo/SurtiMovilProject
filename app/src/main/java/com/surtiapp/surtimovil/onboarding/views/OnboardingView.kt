@@ -20,12 +20,10 @@ import androidx.compose.ui.unit.dp
 import com.surtiapp.surtimovil.onboarding.viewmodel.OnboardingViewModel
 import kotlinx.coroutines.launch
 
-/**
- * Vista que integra todas las vistas del onboarding
- */
 @Composable
 fun OnboardingView(
-    viewModel: OnboardingViewModel
+    viewModel: OnboardingViewModel,
+    onFinish: () -> Unit = {} // <-- NUEVO
 ) {
     val pages by viewModel.pages.collectAsState()
     val currentPage by viewModel.currentPage.collectAsState()
@@ -62,6 +60,7 @@ fun OnboardingView(
                     if (!viewModel.isLastPage()) {
                         scope.launch { pagerState.animateScrollToPage(currentPage + 1) }
                     } else {
+                        onFinish() // <-- GUARDAR FLAG (se hará desde Main)
                         Toast.makeText(context, "Onboarding finished", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -75,17 +74,15 @@ fun OnboardingView(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // El pager ocupa la mayor parte del alto
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f) // <- clave para empujar los dots hacia abajo
+                    .weight(1f)
             ) { page ->
                 OnboardingPageView(pageModel = pages[page])
             }
 
-            // Dots al final del contenido (arriba del bottomBar)
             DotsIndicatorView(
                 totalDots = pages.size,
                 selectedIndex = currentPage,

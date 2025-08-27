@@ -76,4 +76,5 @@ dependencies {
 
     // Pager moderno (HorizontalPager / rememberPagerState)
     implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 }
