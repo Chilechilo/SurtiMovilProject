@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.jorgeromo.androidClassMp1"
+    namespace = "com.example.surtimovil"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.jorgeromo.androidClassMp1"
+        applicationId = "com.example.surtimovil"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
