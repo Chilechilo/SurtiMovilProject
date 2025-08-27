@@ -1,49 +1,48 @@
 package com.surtiapp.surtimovil.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
-    primary            = PurplePrimary,
+    primary            = Terracotta,
     onPrimary          = Color.White,
-    primaryContainer   = Color(0xFFEDE7FF),
-    onPrimaryContainer = Color(0xFF2C1141),
+    primaryContainer   = Color(0xFFFFE1D8),
+    onPrimaryContainer = Color(0xFF3F2018),
 
-    secondary          = PeachSecondary,
-    // buen contraste sobre peach
-    onSecondary        = Color(0xFF1F1400),
+    secondary          = Amber,
+    onSecondary        = Color(0xFF1F1208),
+    secondaryContainer = Color(0xFFFFE2C8),
+    onSecondaryContainer = Color(0xFF2F1600),
 
-    tertiary           = TealTertiary,
-    onTertiary         = Color.White,
+    tertiary           = Olive,
+    onTertiary         = Color(0xFF0F1E0D),
 
-    background         = BgLight,
-    onBackground       = OnTextLight,
+    background         = Cream,          // fondo general
+    onBackground       = TextDark,
+    surface            = Color.White,    // tarjetas/surfaces
+    onSurface          = TextDark,
 
-    surface            = SurfaceLight,
-    onSurface          = OnTextLight,
-
-    outline            = OutlineLight,
+    outline            = OutlineWarm
 )
 
 private val DarkColors = darkColorScheme(
-    primary            = PurplePrimaryDark,
-    onPrimary          = Color(0xFF221338),
-
-    secondary          = PeachSecondaryDark,
-    onSecondary        = Color(0xFF2B1300),
-
-    tertiary           = TealTertiaryDark,
-    onTertiary         = Color(0xFF002016),
+    primary            = TerracottaDark,
+    onPrimary          = Color(0xFF4C2317),
+    secondary          = AmberDark,
+    onSecondary        = Color(0xFF3B1D00),
+    tertiary           = OliveDark,
+    onTertiary         = Color(0xFF0C210F),
 
     background         = BgDark,
-    onBackground       = OnTextDark,
-
+    onBackground       = TextLight,
     surface            = SurfaceDark,
-    onSurface          = OnTextDark,
+    onSurface          = TextLight,
 
-    outline            = OutlineDark,
+    outline            = OutlineDark
 )
 
 @Composable
@@ -53,7 +52,6 @@ fun SurtiMovilTheme(
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = Typography, // deja tus tipografías actuales
         content = content
     )
 }

@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.surtiapp.surtimovil.core.datastore.DataStoreManager
-import com.surtiapp.surtimovil.login.LoginView
+import com.surtiapp.surtimovil.homescreen.HomeScreenView
 import com.surtiapp.surtimovil.onboarding.viewmodel.OnboardingViewModel
 import com.surtiapp.surtimovil.onboarding.views.OnboardingView
 import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
                             scope.launch { ds.setOnboardingDone(true) }
                         }
                     )
-                    true -> LoginView()
+                    true -> HomeScreenView()
                 }
             }
         }
