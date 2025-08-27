@@ -18,6 +18,7 @@ class MainActivity : ComponentActivity() {
                 val vm: OnboardingViewModel = viewModel()
                 OnboardingView(viewModel = vm)
                 // TabBarNavigationView()
+                // Prueba Alex
             }
         }
     }
