@@ -1,6 +1,6 @@
 package com.surtiapp.surtimovil.onboarding.model
 
-import com.example.surtimovil.R
+import com.surtiapp.surtimovil.R
 
 /**
  * Contenido del onboarding

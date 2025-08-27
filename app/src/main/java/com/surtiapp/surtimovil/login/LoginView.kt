@@ -26,7 +26,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import com.example.surtimovil.R
+import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
 
 
@@ -47,7 +47,7 @@ fun LoginView() {
     ) {
         // Imagen del logo
         Image(
-            painter = painterResource(id = R.drawable.ulsalogo),
+            painter = painterResource(id = R.drawable.surtilogo),
             contentDescription = "",
             modifier = Modifier
                 .size(150.dp)

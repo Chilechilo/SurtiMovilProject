@@ -13,17 +13,23 @@
         android:theme="@style/Theme.SurtiMovil"
         tools:targetApi="31">
 
-        <!-- Usa el nombre completamente calificado para evitar errores -->
+        <!-- Splash como LAUNCHER -->
         <activity
-            android:name="com.surtiapp.surtimovil.MainActivity"
+            android:name="com.surtiapp.surtimovil.utils.SplashActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.SurtiMovil">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Main SIN MAIN/LAUNCHER -->
+        <activity
+            android:name="com.surtiapp.surtimovil.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.SurtiMovil" />
 
     </application>
 </manifest>
