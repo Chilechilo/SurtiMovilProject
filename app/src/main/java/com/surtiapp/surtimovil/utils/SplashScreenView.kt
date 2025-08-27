@@ -30,7 +30,7 @@ fun SplashScreenView() {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "SurtiMovil",
+                text = "SurtiMovil: Pide Recibe Vende",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground

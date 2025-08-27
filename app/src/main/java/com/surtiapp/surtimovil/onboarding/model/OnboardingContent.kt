@@ -10,18 +10,18 @@ object OnboardingContent {
     val pages = listOf(
         OnboardingPageModel(
             imageRes = R.drawable.onb_1,
-            title = "Descubre tu vocación Lasallista",
-            description = "Explora una educación universitario con valores cristianos e integrales, donde formar profesionales con vocación al servicio y responsabilidad social es el compromiso que nos distingue."
+            title = "Tu tienda siempre llena, sin perder tiempo",
+            description = "Desde tu celular, elige los abarrotes que tu negocio necesita. Olvídate de salir y perder tiempo."
         ),
         OnboardingPageModel(
             imageRes = R.drawable.onb_2,
-            title = "Innovación educativa y colaboración",
-            description = "Accede a modernas aulas, tecnología de punta y espacios de innovación, pensados para fomentar el trabajo colaborativo y el desarrollo profesional desde hoy."
+            title = "Pide facil,recibe rapido.",
+            description = "Nunca te quedas sin surtido. Más ventas, menos distracciones."
         ),
         OnboardingPageModel(
             imageRes = R.drawable.onb_3,
-            title = "Transforma tu futuro con excelencia",
-            description = "Forma parte de una comunidad educativa que impulsa tu crecimiento académico, humanista e investigativo, en un entorno universitario de calidad y prestigio regional."
+            title = "Todo en un solo lugar",
+            description = "Precios competitivos, entrega directa y catálogo completo. Descarga, pide y sigue vendiendo."
         )
     )
 }

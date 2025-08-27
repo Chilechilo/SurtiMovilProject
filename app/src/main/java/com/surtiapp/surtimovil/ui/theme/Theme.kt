@@ -1,57 +1,59 @@
 package com.surtiapp.surtimovil.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val LightColors = lightColorScheme(
+    primary            = PurplePrimary,
+    onPrimary          = Color.White,
+    primaryContainer   = Color(0xFFEDE7FF),
+    onPrimaryContainer = Color(0xFF2C1141),
+
+    secondary          = PeachSecondary,
+    // buen contraste sobre peach
+    onSecondary        = Color(0xFF1F1400),
+
+    tertiary           = TealTertiary,
+    onTertiary         = Color.White,
+
+    background         = BgLight,
+    onBackground       = OnTextLight,
+
+    surface            = SurfaceLight,
+    onSurface          = OnTextLight,
+
+    outline            = OutlineLight,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+private val DarkColors = darkColorScheme(
+    primary            = PurplePrimaryDark,
+    onPrimary          = Color(0xFF221338),
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    secondary          = PeachSecondaryDark,
+    onSecondary        = Color(0xFF2B1300),
+
+    tertiary           = TealTertiaryDark,
+    onTertiary         = Color(0xFF002016),
+
+    background         = BgDark,
+    onBackground       = OnTextDark,
+
+    surface            = SurfaceDark,
+    onSurface          = OnTextDark,
+
+    outline            = OutlineDark,
 )
 
 @Composable
 fun SurtiMovilTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
+        colorScheme = if (darkTheme) DarkColors else LightColors,
+        typography = Typography, // deja tus tipografías actuales
         content = content
     )
 }
