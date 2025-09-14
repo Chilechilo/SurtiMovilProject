@@ -16,12 +16,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavController
 
 // Data de los tabs
 private data class TabItem(val title: String, val icon: ImageVector)
 
 @Composable
-fun HomeScreenView() {
+fun HomeScreenView(navController : NavController) {
     // Items del bottom bar
     val tabs = listOf(
         TabItem("Catálogo", Icons.Filled.List),
@@ -53,7 +54,7 @@ fun HomeScreenView() {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogoScreen()
+                0 -> CatalogoScreen(navController)
                 1 -> PedidosScreen()
                 2 -> CuentasScreen()
             }
@@ -64,11 +65,20 @@ fun HomeScreenView() {
 /* ======= Contenido de cada pestaña (placeholders bonitos) ======= */
 
 @Composable
-private fun CatalogoScreen() {
+private fun CatalogoScreen(navController : NavController) {
     CenterCard(
         title = "Catálogo",
         body = "Bienvenido Corly"
     )
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(onClick = { navController.navigate("login") }) {
+            Text("Login")
+        }
+    }
 }
 
 @Composable
