@@ -9,7 +9,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.surtiapp.surtimovil.R
 
 /**
  * Vista del onboarding que muestra los botones de anterior, siguiente/empezar
@@ -30,12 +32,12 @@ fun BottomBarView(
         TextButton(
             enabled = page > 0,
             onClick = onPrev
-        ) { Text("Anterior") }
+        ) { Text(stringResource(R.string.prev)) }
 
         Spacer(Modifier.weight(1f))
 
         Button(onClick = onNext) {
-            Text(if (isLastPage) "Empezar" else "Siguiente")
+            Text(text = if (isLastPage) stringResource(R.string.start) else stringResource(R.string.next))
         }
     }
 }

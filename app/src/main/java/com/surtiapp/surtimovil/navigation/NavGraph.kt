@@ -14,6 +14,6 @@ fun AppNavHost(navController: NavHostController) {
         startDestination = "home"
     ) {
         composable("home") { HomeScreenView(navController) }
-        composable("login") { LoginView() }
+        composable("login") { LoginView(navController) }
     }
 }

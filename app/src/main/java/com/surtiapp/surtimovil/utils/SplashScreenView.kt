@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,12 +26,12 @@ fun SplashScreenView() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
                 painter = painterResource(id = R.drawable.surtilogo),
-                contentDescription = "Surtimovil logo",
+                contentDescription = stringResource(R.string.app_logo_cd),
                 modifier = Modifier.size(160.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "SurtiMovil: Pide Recibe Vende",
+                text = stringResource(R.string.splash_tagline),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground

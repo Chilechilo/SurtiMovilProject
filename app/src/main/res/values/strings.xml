@@ -1,6 +1,48 @@
 <resources>
+    <!--Login-->
     <string name="app_name">SurtiMovil</string>
-    <string name="email_label">Email</string>
-    <string name="password_label">Password</string>
-    <string name="login_button">Login</string>
+    <string name="email_label">Correo</string>
+    <string name="password_label">Contraseña</string>
+    <string name="login_button">Iniciar sesión</string>
+    <string name="signing_in">Iniciando sesión…</string>
+    <string name="app_logo_cd">Logotipo de la app</string>
+    <string name="show_password_cd">Mostrar contraseña</string>
+    <string name="hide_password_cd">Ocultar contraseña</string>
+    <!--Splash-->
+    <string name="splash_tagline">SurtiMovil: Pide • Recibe • Vende</string>
+    <!--Onboarding-->
+    <string name="onb_title_1">Tu tienda siempre llena, sin perder tiempo</string>
+    <string name="onb_desc_1">Desde tu celular, elige los abarrotes que tu negocio necesita. Olvídate de salir y perder tiempo.</string>
+    <string name="onb_title_2">Pide fácil, recibe rápido</string>
+    <string name="onb_desc_2">Nunca te quedas sin surtido. Más ventas, menos distracciones.</string>
+    <string name="onb_title_3">Todo en un solo lugar</string>
+    <string name="onb_desc_3">Precios competitivos, entrega directa y catálogo completo. Descarga, pide y sigue vendiendo.</string>
+    <string name="prev">Anterior</string>
+    <string name="next">Siguiente</string>
+    <string name="start">Empezar</string>
+    <!--Home-->
+    <string name="tab_catalogo">Catálogo</string>
+    <string name="tab_pedidos">Pedidos</string>
+    <string name="tab_mi_cuenta">Mi Cuenta</string>
+    <string name="tab_ayuda">Ayuda</string>
+    <string name="tab_ofertas">Ofertas</string>
+    <string name="go_login">Ir al Login</string>
+    <string name="pedidos_title">Pedidos</string>
+    <string name="pedidos_body">Mi nombre es Edwin, yo hice el mimic</string>
+    <string name="cuenta_title">Mi Cuenta</string>
+    <string name="cuenta_body">¿Puedo tener un vaso de agua, por favor?</string>
+    <string name="ayuda_title">Ayuda</string>
+    <string name="ayuda_body">Preguntas frecuentes</string>
+    <string name="ofertas_title">Ofertas</string>
+    <string name="ofertas_body">Ofertas de temporada</string>
+    <!--Toast-->
+    <string name="login_required_fields">Email y password son obligatorios</string>
+    <string name="login_success">Login exitoso. Bienvenido %1$s</string>
+    <string name="login_failed">Login fallido</string>
+    <string name="login_network_error">Error de red/servidor</string>
+    <!--AuthRepository-->
+    <string name="auth_empty_response">Respuesta vacía del servidor</string>
+    <string name="auth_invalid_credentials">Credenciales inválidas</string>
+    <string name="auth_offline">Sin conexión. Verifica tu red.</string>
+    <string name="auth_unexpected_error">Error inesperado</string>
 </resources>
