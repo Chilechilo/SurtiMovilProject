@@ -11,8 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.rememberNavController
 import com.surtiapp.surtimovil.core.datastore.DataStoreManager
-import com.surtiapp.surtimovil.homescreen.HomeScreenView
+import com.surtiapp.surtimovil.navigation.AppNavHost
 import com.surtiapp.surtimovil.onboarding.viewmodel.OnboardingViewModel
 import com.surtiapp.surtimovil.onboarding.views.OnboardingView
 import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
@@ -30,18 +31,19 @@ class MainActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 val vm: OnboardingViewModel = viewModel()
 
-                // Estado nulo mientras se obtiene el valor real del Flow
                 val onboardingDone: Boolean? by ds.onboardingDoneFlow.collectAsState(initial = null)
 
+                val navController = rememberNavController()
+
                 when (onboardingDone) {
-                    null -> SplashLoader() // loader / splash temporal
+                    null -> SplashLoader()
                     false -> OnboardingView(
                         viewModel = vm,
                         onFinish = {
                             scope.launch { ds.setOnboardingDone(true) }
                         }
                     )
-                    true -> HomeScreenView()
+                    true -> AppNavHost(navController = navController)
                 }
             }
         }
@@ -54,4 +56,5 @@ private fun SplashLoader() {
         CircularProgressIndicator()
     }
 }
+
 // Prueba Manuel
