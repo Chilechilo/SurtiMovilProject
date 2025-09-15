@@ -3,31 +3,27 @@ package com.surtiapp.surtimovil.homescreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 
-// Data de los tabs
+// Lista de tabs
 private data class TabItem(val title: String, val icon: ImageVector)
 
 @Composable
-fun HomeScreenView(navController : NavController) {
-    // Items del bottom bar
+fun HomeScreenView(navController: NavController) {
     val tabs = listOf(
         TabItem("Catálogo", Icons.Filled.List),
         TabItem("Pedidos", Icons.Filled.ShoppingCart),
         TabItem("Mi Cuenta", Icons.Filled.Person),
+        TabItem("Ayuda", Icons.Filled.Help),
+        TabItem("Ofertas", Icons.Filled.LocalOffer),
     )
 
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
@@ -57,26 +53,23 @@ fun HomeScreenView(navController : NavController) {
                 0 -> CatalogoScreen(navController)
                 1 -> PedidosScreen()
                 2 -> CuentasScreen()
+                3 -> AyudaScreen()
+                4 -> OfertasScreen()
             }
         }
     }
 }
 
-/* ======= Contenido de cada pestaña (placeholders bonitos) ======= */
+/* ======= Contenido de cada pestaña ======= */
 
 @Composable
-private fun CatalogoScreen(navController : NavController) {
-    CenterCard(
-        title = "Catálogo",
-        body = "Bienvenido Corly"
-    )
-
+private fun CatalogoScreen(navController: NavController) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         Button(onClick = { navController.navigate("login") }) {
-            Text("Login")
+            Text("Ir al Login")
         }
     }
 }
@@ -94,6 +87,22 @@ private fun CuentasScreen() {
     CenterCard(
         title = "Mi Cuenta",
         body = "Can I get a glass of water please?"
+    )
+}
+
+@Composable
+private fun AyudaScreen() {
+    CenterCard(
+        title = "Ayuda",
+        body = "Preguntas frecuentes"
+    )
+}
+
+@Composable
+private fun OfertasScreen() {
+    CenterCard(
+        title = "Ofertas",
+        body = "Ofertas de temporada"
     )
 }
 
