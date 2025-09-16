@@ -61,7 +61,6 @@ fun LoginView(navController: NavController) {
     // Mostrar toasts y snackbars
     LaunchedEffect(vm) {
         vm.toastEvents.collectLatest { msg ->
-            showToastSafe(msg)
             snackbarHostState.showSnackbar(message = msg)
         }
     }

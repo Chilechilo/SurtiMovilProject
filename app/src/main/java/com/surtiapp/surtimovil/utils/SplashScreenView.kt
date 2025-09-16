@@ -25,7 +25,7 @@ fun SplashScreenView() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Image(
-                painter = painterResource(id = R.drawable.surtilogo),
+                painter = painterResource(id = R.drawable.surtimovil_trans),
                 contentDescription = stringResource(R.string.app_logo_cd),
                 modifier = Modifier.size(160.dp)
             )

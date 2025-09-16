@@ -12,10 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.surtiapp.surtimovil.R
+import androidx.compose.foundation.layout.navigationBarsPadding
 
-/**
- * Vista del onboarding que muestra los botones de anterior, siguiente/empezar
- */
 @Composable
 fun BottomBarView(
     isLastPage: Boolean,
@@ -28,16 +26,25 @@ fun BottomBarView(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp)
+            .navigationBarsPadding()
     ) {
         TextButton(
             enabled = page > 0,
             onClick = onPrev
-        ) { Text(stringResource(R.string.prev)) }
+        ) {
+            Text(stringResource(R.string.prev))
+        }
 
         Spacer(Modifier.weight(1f))
 
         Button(onClick = onNext) {
-            Text(text = if (isLastPage) stringResource(R.string.start) else stringResource(R.string.next))
+            Text(
+                text = if (isLastPage)
+                    stringResource(R.string.start)
+                else
+                    stringResource(R.string.next)
+            )
         }
     }
 }
+

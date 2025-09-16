@@ -61,7 +61,7 @@ fun OnboardingView(
                         scope.launch { pagerState.animateScrollToPage(currentPage + 1) }
                     } else {
                         onFinish() // <-- GUARDAR FLAG (se hará desde Main)
-                        Toast.makeText(context, "Onboarding finished", Toast.LENGTH_SHORT).show()
+
                     }
                 }
             )

@@ -66,6 +66,10 @@ fun HomeScreenView(navController: NavController) {
 
 @Composable
 private fun CatalogoScreen(navController: NavController) {
+    CenterCard(
+        title = stringResource(R.string.greed_title),
+        body = stringResource(R.string.catalogo_body)
+    )
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center

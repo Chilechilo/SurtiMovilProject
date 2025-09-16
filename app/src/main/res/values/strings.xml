@@ -26,6 +26,8 @@
     <string name="tab_mi_cuenta">Mi Cuenta</string>
     <string name="tab_ayuda">Ayuda</string>
     <string name="tab_ofertas">Ofertas</string>
+    <string name="greed_title">¡Bienvenido de nuevo!</string>
+    <string name="catalogo_body">Estas son nuestras recomendaciones para hoy</string>
     <string name="go_login">Ir al Login</string>
     <string name="pedidos_title">Pedidos</string>
     <string name="pedidos_body">Mi nombre es Edwin, yo hice el mimic</string>

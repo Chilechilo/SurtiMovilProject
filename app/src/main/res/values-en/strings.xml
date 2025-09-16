@@ -27,6 +27,8 @@
     <string name="tab_ayuda">Help</string>
     <string name="tab_ofertas">Offers</string>
     <string name="go_login">Go to Login</string>
+    <string name="greed_title">Welcome back!</string>
+    <string name="catalogo_body">Our recommendations for today</string>
     <string name="pedidos_title">Orders</string>
     <string name="pedidos_body">My name is Edwin, I made the mimic</string>
     <string name="cuenta_title">My Account</string>
