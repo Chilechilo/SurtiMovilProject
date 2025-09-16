@@ -91,7 +91,7 @@ fun LoginView(navController: NavController) {
 
             // Logo institucional
             Image(
-                painter = painterResource(id = R.drawable.surtilogo),
+                painter = painterResource(id = R.drawable.surtimovil_trans),
                 contentDescription = stringResource(R.string.app_logo_cd),
                 modifier = Modifier
                     .size(150.dp)
