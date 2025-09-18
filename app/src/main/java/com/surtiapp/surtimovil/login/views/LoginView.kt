@@ -89,7 +89,7 @@ fun LoginView(navController: NavController) {
             verticalArrangement = Arrangement.Center
         ) {
 
-            // Logo institucional
+            // Logo
             Image(
                 painter = painterResource(id = R.drawable.surtimovil_trans),
                 contentDescription = stringResource(R.string.app_logo_cd),

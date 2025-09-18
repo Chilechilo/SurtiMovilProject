@@ -23,9 +23,9 @@ fun HomeScreenView(navController: NavController) {
     val tabs = listOf(
         TabItem(R.string.tab_catalogo, Icons.Filled.List),
         TabItem(R.string.tab_pedidos, Icons.Filled.ShoppingCart),
-        TabItem(R.string.tab_mi_cuenta, Icons.Filled.Person),
         TabItem(R.string.tab_ayuda, Icons.Filled.Help),
         TabItem(R.string.tab_ofertas, Icons.Filled.LocalOffer),
+        TabItem(R.string.tab_mi_cuenta, Icons.Filled.Person),
     )
 
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
@@ -52,11 +52,11 @@ fun HomeScreenView(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogoScreen(navController)
+                0 -> CatalogoScreen()
                 1 -> PedidosScreen()
-                2 -> CuentasScreen()
-                3 -> AyudaScreen()
-                4 -> OfertasScreen()
+                2 -> AyudaScreen()
+                3 -> OfertasScreen()
+                4 -> CuentasScreen(navController)
             }
         }
     }
@@ -65,19 +65,11 @@ fun HomeScreenView(navController: NavController) {
 /* ======= Contenido de cada pestaña ======= */
 
 @Composable
-private fun CatalogoScreen(navController: NavController) {
+private fun CatalogoScreen() {
     CenterCard(
         title = stringResource(R.string.greed_title),
         body = stringResource(R.string.catalogo_body)
     )
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Button(onClick = { navController.navigate("login") }) {
-            Text(stringResource(R.string.go_login))
-        }
-    }
 }
 
 @Composable
@@ -85,14 +77,6 @@ private fun PedidosScreen() {
     CenterCard(
         title = stringResource(R.string.pedidos_title),
         body = stringResource(R.string.pedidos_body)
-    )
-}
-
-@Composable
-private fun CuentasScreen() {
-    CenterCard(
-        title = stringResource(R.string.cuenta_title),
-        body = stringResource(R.string.cuenta_body)
     )
 }
 
@@ -110,6 +94,22 @@ private fun OfertasScreen() {
         title = stringResource(R.string.ofertas_title),
         body = stringResource(R.string.ofertas_body)
     )
+}
+
+@Composable
+private fun CuentasScreen(navController: NavController) {
+    CenterCard(
+        title = stringResource(R.string.cuenta_title),
+        body = stringResource(R.string.cuenta_body)
+    )
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Button(onClick = { navController.navigate("login") }) {
+            Text(stringResource(R.string.go_login))
+        }
+    }
 }
 
 @Composable
