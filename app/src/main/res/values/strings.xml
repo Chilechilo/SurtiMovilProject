@@ -47,4 +47,12 @@
     <string name="auth_invalid_credentials">Credenciales inválidas</string>
     <string name="auth_offline">Sin conexión. Verifica tu red.</string>
     <string name="auth_unexpected_error">Error inesperado</string>
+    <!--Sign In-->
+    <string name="name_label">Nombre</string>
+    <string name="confirm_password_label">Confirmar contraseña</string>
+    <string name="accept_terms_label">Acepto términos y condiciones</string>
+    <string name="creating_account">Creando cuenta…</string>
+    <string name="signup_button_in_login">¿Aun no tienes una cuenta? Crea una</string>
+    <string name="already_have_account_go_login">¿Ya tienes cuenta? Inicia sesión</string>
+    <string name="signup_button">Crear cuenta</string>
 </resources>

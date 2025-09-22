@@ -28,4 +28,9 @@ class AuthRepository(
             LoginResponse(false, app.getString(R.string.auth_unexpected_error))
         }
     }
+    suspend fun signUp(name: String, email: String, password: String): Result<Unit> {
+        return runCatching {
+
+        }
+    }
 }

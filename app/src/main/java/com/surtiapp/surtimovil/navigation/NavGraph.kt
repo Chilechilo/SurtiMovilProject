@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.surtiapp.surtimovil.Signin.views.SigninView
 import com.surtiapp.surtimovil.homescreen.HomeScreenView
 import com.surtiapp.surtimovil.login.views.LoginView
 
@@ -15,5 +16,6 @@ fun AppNavHost(navController: NavHostController) {
     ) {
         composable("home") { HomeScreenView(navController) }
         composable("login") { LoginView(navController) }
+        composable("signin") { SigninView(navController) }
     }
 }

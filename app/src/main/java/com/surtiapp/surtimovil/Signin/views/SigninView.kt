@@ -1,9 +1,6 @@
-package com.surtiapp.surtimovil.login.views
+package com.surtiapp.surtimovil.Signin.views
 
 import android.app.Application
-import android.os.Handler
-import android.os.Looper
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -24,56 +21,39 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.surtiapp.surtimovil.R
+import com.surtiapp.surtimovil.Signin.viewmodel.SignInViewModel
+import com.surtiapp.surtimovil.Signin.viewmodel.SignInViewModelFactory
 import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
 import com.surtiapp.surtimovil.login.model.repository.AuthRepository
-import com.surtiapp.surtimovil.login.viewmodel.LoginViewModel
-import com.surtiapp.surtimovil.login.viewmodel.LoginViewModelFactory
-import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun LoginView(navController: NavController) {
-    // Inyección simple del repositorio y el ViewModel
+fun SigninView(navController: NavController) {
+    // Inyección simple del repositorio y el ViewModel (mismo patrón que LoginView)
     val app = LocalContext.current.applicationContext as Application
     val repo = remember { AuthRepository(RetrofitProvider.authApi, app) }
-    val vm: LoginViewModel = viewModel(factory = LoginViewModelFactory(repo, app))
+    val vm: SignInViewModel = viewModel(factory = SignInViewModelFactory(repo, app))
     val ui by vm.ui.collectAsState()
 
-    val appContext = LocalContext.current.applicationContext
     val snackbarHostState = remember { SnackbarHostState() }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var pwVisible by remember { mutableStateOf(false) }
+    var pw2Visible by remember { mutableStateOf(false) }
 
-    fun showToastSafe(text: String) {
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            Toast.makeText(appContext, text, Toast.LENGTH_SHORT).show()
-        } else {
-            Handler(Looper.getMainLooper()).post {
-                Toast.makeText(appContext, text, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    // Mostrar toasts y snackbars
+    // Toasts
     LaunchedEffect(vm) {
         vm.toastEvents.collectLatest { msg ->
-            snackbarHostState.showSnackbar(message = msg)
+            snackbarHostState.showSnackbar(msg)
         }
     }
-
-    // Navegar de regreso a Home al iniciar sesión con éxito
+    // Al registrarse con éxito, regresar a la pantalla anterior
     LaunchedEffect(vm) {
-        vm.loginSuccessEvents.collectLatest {
-            navController.popBackStack() // vuelve a la pantalla anterior (Home)
-            // Si prefieres ir a una ruta específica:
-            // navController.navigate("home") {
-            //     popUpTo("login") { inclusive = true }
-            //     launchSingleTop = true
-            // }
+        vm.signUpSuccessEvents.collectLatest {
+            navController.popBackStack()
+            // navController.navigate("home") { popUpTo("signin") { inclusive = true } }
         }
     }
 
@@ -100,7 +80,22 @@ fun LoginView(navController: NavController) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Campo de email
+            // Nombre
+            OutlinedTextField(
+                value = ui.name,
+                onValueChange = vm::onNameChange,
+                label = { Text(stringResource(R.string.name_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // Email
             OutlinedTextField(
                 value = ui.email,
                 onValueChange = vm::onEmailChange,
@@ -115,7 +110,7 @@ fun LoginView(navController: NavController) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Campo de password con mostrar/ocultar
+            // Password
             OutlinedTextField(
                 value = ui.password,
                 onValueChange = vm::onPasswordChange,
@@ -123,64 +118,90 @@ fun LoginView(navController: NavController) {
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
+                    imeAction = ImeAction.Next
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = { vm.login() }
-                ),
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                visualTransformation = if (pwVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
-                    val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                    val cd = if (passwordVisible)
-                        stringResource(R.string.hide_password_cd)
-                    else
-                        stringResource(R.string.show_password_cd)
-
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    IconButton(onClick = { pwVisible = !pwVisible }) {
+                        val icon = if (pwVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                        val cd = if (pwVisible)
+                            stringResource(R.string.hide_password_cd)
+                        else stringResource(R.string.show_password_cd)
                         Icon(imageVector = icon, contentDescription = cd)
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(Modifier.height(8.dp))
+
+            // Confirmación
+            OutlinedTextField(
+                value = ui.confirm,
+                onValueChange = vm::onConfirmChange,
+                label = { Text(stringResource(R.string.confirm_password_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { vm.signUp() }
+                ),
+                visualTransformation = if (pw2Visible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { pw2Visible = !pw2Visible }) {
+                        val icon = if (pw2Visible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                        val cd = if (pw2Visible)
+                            stringResource(R.string.hide_password_cd)
+                        else stringResource(R.string.show_password_cd)
+                        Icon(imageVector = icon, contentDescription = cd)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // Aceptar términos
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = ui.acceptTerms,
+                    onCheckedChange = vm::onAcceptTermsChange
+                )
+                Text(
+                    text = stringResource(R.string.accept_terms_label),
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
+
             Spacer(Modifier.height(16.dp))
 
-            // Botón de login
+            // Botón de crear cuenta
             Button(
-                onClick = { vm.login() },
-                enabled = !ui.isLoading,
+                onClick = { vm.signUp() },
+                enabled = !ui.isLoading && ui.acceptTerms,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 if (ui.isLoading) {
                     CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.signing_in))
+                    Text(stringResource(R.string.creating_account))
                 } else {
-                    Text(stringResource(R.string.login_button))
+                    Text(stringResource(R.string.signup_button))
                 }
             }
 
-            // Boton Sign In
-            Spacer(Modifier.height(8.dp))
+            // Enlace para ir al login
             TextButton(
-                onClick = {
-                    navController.navigate("signin") {
-                        launchSingleTop = true
-                    }
-                },
+                onClick = { navController.popBackStack() },
                 modifier = Modifier.align(Alignment.End)
             ) {
-                Text(stringResource(R.string.signup_button_in_login))
+                Text(stringResource(R.string.already_have_account_go_login))
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoginViewPreview() {
-    // Solo para preview; no hay NavController real aquí.
-    SurtiMovilTheme {
-        // Podrías usar un fake navController si lo deseas.
     }
 }
