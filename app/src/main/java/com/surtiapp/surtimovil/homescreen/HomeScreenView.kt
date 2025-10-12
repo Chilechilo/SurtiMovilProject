@@ -13,7 +13,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.surtiapp.surtimovil.R
+import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
+import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
+import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
+import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
+import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
+import retrofit2.Retrofit // <-- NUEVO
+import retrofit2.converter.gson.GsonConverterFactory // <-- NUEVO
 
 // Ahora los tabs guardan IDs en vez de String directo
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
@@ -52,7 +60,7 @@ fun HomeScreenView(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogoScreen()
+                0 -> CatalogoScreen() // Aquí llamamos a la función actualizada con la lógica de productos
                 1 -> PedidosScreen()
                 2 -> AyudaScreen()
                 3 -> OfertasScreen()
@@ -66,10 +74,34 @@ fun HomeScreenView(navController: NavController) {
 
 @Composable
 private fun CatalogoScreen() {
-    CenterCard(
-        title = stringResource(R.string.greed_title),
-        body = stringResource(R.string.catalogo_body)
-    )
+    // ----------------------------------------------------
+    // Lógica para cargar el Catálogo de Productos (ÍNDICE 0)
+    // ----------------------------------------------------
+
+    // 1. Inicialización de Retrofit y Repositorio (usamos remember para que solo se haga una vez)
+    val retrofit = remember {
+        Retrofit.Builder()
+            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    val api = remember { retrofit.create(HomeApi::class.java) }
+    val repo = remember { HomeRepository(api) }
+
+    // 2. Inicialización del ViewModel
+    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(repo))
+
+    // 3. Observar el estado de la UI
+    val uiState by viewModel.ui.collectAsState()
+
+    // 4. Iniciar la carga de datos (solo al entrar a la pantalla)
+    LaunchedEffect(Unit) {
+        viewModel.fetchHome()
+    }
+
+    // 5. Renderizar la vista real de productos
+    HomeViewProducts(uiState = uiState)
 }
 
 @Composable
