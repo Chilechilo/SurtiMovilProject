@@ -1,8 +1,10 @@
 package com.surtiapp.surtimovil.login.views
 
 import android.app.Application
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -10,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -26,19 +29,23 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
 import com.surtiapp.surtimovil.login.model.repository.AuthRepository
+import com.surtiapp.surtimovil.login.util.BiometricHelper
 import com.surtiapp.surtimovil.login.viewmodel.LoginViewModel
 import com.surtiapp.surtimovil.login.viewmodel.LoginViewModelFactory
 import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun LoginView(navController: NavController) {
-    // Inyección simple del repositorio y el ViewModel
+fun LoginView(navController: NavController, activity: FragmentActivity) {
+    Log.d("BiometricCheck", "🚀 Entrando a LoginView composable")
+
+    // --- ViewModel + Repository ---
     val app = LocalContext.current.applicationContext as Application
     val repo = remember { AuthRepository(RetrofitProvider.authApi, app) }
     val vm: LoginViewModel = viewModel(factory = LoginViewModelFactory(repo, app))
@@ -48,6 +55,7 @@ fun LoginView(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // --- Toast helper ---
     fun showToastSafe(text: String) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             Toast.makeText(appContext, text, Toast.LENGTH_SHORT).show()
@@ -58,25 +66,20 @@ fun LoginView(navController: NavController) {
         }
     }
 
-    // Mostrar toasts y snackbars
+    // --- Observadores de eventos ---
     LaunchedEffect(vm) {
         vm.toastEvents.collectLatest { msg ->
             snackbarHostState.showSnackbar(message = msg)
         }
     }
 
-    // Navegar de regreso a Home al iniciar sesión con éxito
     LaunchedEffect(vm) {
         vm.loginSuccessEvents.collectLatest {
-            navController.popBackStack() // vuelve a la pantalla anterior (Home)
-            // Si prefieres ir a una ruta específica:
-            // navController.navigate("home") {
-            //     popUpTo("login") { inclusive = true }
-            //     launchSingleTop = true
-            // }
+            navController.popBackStack()
         }
     }
 
+    // --- Pantalla principal ---
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
@@ -89,7 +92,7 @@ fun LoginView(navController: NavController) {
             verticalArrangement = Arrangement.Center
         ) {
 
-            // Logo
+            // --- Logo ---
             Image(
                 painter = painterResource(id = R.drawable.surtimovil_trans),
                 contentDescription = stringResource(R.string.app_logo_cd),
@@ -100,7 +103,7 @@ fun LoginView(navController: NavController) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Campo de email
+            // --- Campo Email ---
             OutlinedTextField(
                 value = ui.email,
                 onValueChange = vm::onEmailChange,
@@ -115,7 +118,7 @@ fun LoginView(navController: NavController) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Campo de password con mostrar/ocultar
+            // --- Campo Password ---
             OutlinedTextField(
                 value = ui.password,
                 onValueChange = vm::onPasswordChange,
@@ -125,9 +128,7 @@ fun LoginView(navController: NavController) {
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
                 ),
-                keyboardActions = KeyboardActions(
-                    onDone = { vm.login() }
-                ),
+                keyboardActions = KeyboardActions(onDone = { vm.login() }),
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     val icon = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
@@ -145,7 +146,7 @@ fun LoginView(navController: NavController) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Botón de login
+            // --- Botón Login Normal ---
             Button(
                 onClick = { vm.login() },
                 enabled = !ui.isLoading,
@@ -159,6 +160,60 @@ fun LoginView(navController: NavController) {
                     Text(stringResource(R.string.login_button))
                 }
             }
+
+            Spacer(Modifier.height(8.dp))
+
+            // --- Botón Login con Biometría (Face ID / Huella) ---
+            Log.d("BiometricCheck", "🧩 Activity encontrada: ${activity != null}")
+
+            val context = LocalContext.current
+            val biometricHelper = remember {
+                BiometricHelper(
+                    context = context,
+                    activity = activity,
+                    onSuccess = {
+                        Log.d("BiometricCheck", "Autenticación biométrica EXITOSA ✅")
+                        vm.loginWithBiometric()
+                    },
+                    onError = { msg ->
+                        Log.e("BiometricCheck", "Error en biometría: $msg")
+                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+
+            // Diagnóstico al abrir la vista
+            LaunchedEffect(Unit) {
+                val canAuth = biometricHelper.canAuthenticate()
+                Log.d("BiometricCheck", "🔍 canAuthenticate() devuelve: $canAuth")
+            }
+
+            if (biometricHelper.canAuthenticate()) {
+                OutlinedButton(
+                    onClick = { biometricHelper.showPrompt() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Face, contentDescription = "Face ID")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Iniciar sesión con Face ID")
+                }
+            } else {
+                Log.w("BiometricCheck", "🚫 El dispositivo no tiene Face ID ni huella registrada.")
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // --- Botón para registrarse ---
+            TextButton(
+                onClick = {
+                    navController.navigate("signin") {
+                        launchSingleTop = true
+                    }
+                },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(stringResource(R.string.signup_button_in_login))
+            }
         }
     }
 }
@@ -166,8 +221,15 @@ fun LoginView(navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun LoginViewPreview() {
-    // Solo para preview; no hay NavController real aquí.
-    SurtiMovilTheme {
-        // Podrías usar un fake navController si lo deseas.
+    SurtiMovilTheme { }
+}
+
+/* ✅ Extensión auxiliar */
+fun Context.findActivity(): FragmentActivity? {
+    var currentContext = this
+    while (currentContext is android.content.ContextWrapper) {
+        if (currentContext is FragmentActivity) return currentContext
+        currentContext = currentContext.baseContext
     }
+    return null
 }
