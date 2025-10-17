@@ -2,6 +2,7 @@ package com.surtiapp.surtimovil.homescreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -9,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -20,12 +22,15 @@ import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
-import retrofit2.Retrofit // <-- NUEVO
-import retrofit2.converter.gson.GsonConverterFactory // <-- NUEVO
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
-// Ahora los tabs guardan IDs en vez de String directo
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenView(navController: NavController) {
     val tabs = listOf(
@@ -38,7 +43,42 @@ fun HomeScreenView(navController: NavController) {
 
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
 
+    // 🌟 Estado de sesión
+    var isLoggedIn by rememberSaveable { mutableStateOf(false) }
+    var userName by rememberSaveable { mutableStateOf("Usuario") }
+
+    // ✅ Detectar cuando regresamos del login
+    val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { entry ->
+            val fromLogin = entry.destination.route == "home" &&
+                    entry.savedStateHandle?.get<Boolean>("loggedIn") == true
+            if (fromLogin) {
+                isLoggedIn = true
+                userName = entry.savedStateHandle?.get<String>("username") ?: "Usuario"
+            }
+        }
+    }
+
     Scaffold(
+        // ✅ Barra superior solo si hay sesión iniciada
+        topBar = {
+            if (isLoggedIn) {
+                CenterAlignedTopAppBar(
+                    title = { Text("SurtiMóvil") },
+                    actions = {
+                        IconButton(onClick = { selectedIndex = 4 }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Perfil",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                )
+            }
+        },
+
         bottomBar = {
             NavigationBar {
                 tabs.forEachIndexed { index, item ->
@@ -60,11 +100,18 @@ fun HomeScreenView(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogoScreen() // Aquí llamamos a la función actualizada con la lógica de productos
+                0 -> CatalogoScreen()
                 1 -> PedidosScreen()
                 2 -> AyudaScreen()
                 3 -> OfertasScreen()
-                4 -> CuentasScreen(navController)
+                4 -> CuentasScreen(
+                    navController = navController,
+                    isLoggedIn = isLoggedIn,
+                    onLogout = {
+                        isLoggedIn = false
+                        userName = ""
+                    }
+                )
             }
         }
     }
@@ -74,11 +121,6 @@ fun HomeScreenView(navController: NavController) {
 
 @Composable
 private fun CatalogoScreen() {
-    // ----------------------------------------------------
-    // Lógica para cargar el Catálogo de Productos (ÍNDICE 0)
-    // ----------------------------------------------------
-
-    // 1. Inicialización de Retrofit y Repositorio (usamos remember para que solo se haga una vez)
     val retrofit = remember {
         Retrofit.Builder()
             .baseUrl("https://gist.githubusercontent.com/Manuel2210337/")
@@ -89,18 +131,13 @@ private fun CatalogoScreen() {
     val api = remember { retrofit.create(HomeApi::class.java) }
     val repo = remember { HomeRepository(api) }
 
-    // 2. Inicialización del ViewModel
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(repo))
-
-    // 3. Observar el estado de la UI
     val uiState by viewModel.ui.collectAsState()
 
-    // 4. Iniciar la carga de datos (solo al entrar a la pantalla)
     LaunchedEffect(Unit) {
         viewModel.fetchHome()
     }
 
-    // 5. Renderizar la vista real de productos
     HomeViewProducts(uiState = uiState)
 }
 
@@ -128,22 +165,77 @@ private fun OfertasScreen() {
     )
 }
 
+/* ======= Pestaña de cuenta (login / logout dinámico) ======= */
 @Composable
-private fun CuentasScreen(navController: NavController) {
-    CenterCard(
-        title = stringResource(R.string.cuenta_title),
-        body = stringResource(R.string.cuenta_body)
-    )
+private fun CuentasScreen(
+    navController: NavController,
+    isLoggedIn: Boolean,
+    onLogout: () -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Button(onClick = { navController.navigate("login") }) {
-            Text(stringResource(R.string.go_login))
+        if (isLoggedIn) {
+            // ✅ Pantalla de sesión iniciada
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Usuario",
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                )
+                Text(
+                    text = "Sesión iniciada",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
+                )
+                Button(
+                    onClick = { onLogout() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Cerrar sesión")
+                }
+            }
+        } else {
+            // ✅ Pantalla de invitado (no logueado)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Invitado",
+                    modifier = Modifier.size(80.dp)
+                )
+
+                var isNavigating by remember { mutableStateOf(false) }
+
+                Button(
+                    onClick = {
+                        if (!isNavigating) {
+                            isNavigating = true
+                            navController.navigate("login")
+                        }
+                    },
+                    enabled = !isNavigating
+                ) {
+                    if (isNavigating) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 8.dp)
+                        )
+                        Text("Abriendo...")
+                    } else {
+                        Text("Iniciar sesión")
+                    }
+                }
+            }
         }
     }
 }
 
+/* ======= Tarjeta genérica reutilizable ======= */
 @Composable
 private fun CenterCard(title: String, body: String) {
     Box(
