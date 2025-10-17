@@ -54,6 +54,7 @@ dependencies {
 
     // Navegación (deja una sola versión)
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation(libs.androidx.fragment.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -86,5 +87,14 @@ dependencies {
 
     //Face ID
     implementation ("androidx.biometric:biometric:1.2.0-alpha05")
+
+    //CameraX y ML Kit
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    //ZXing para generar QR
+    implementation("com.google.zxing:core:3.5.3")
 
 }
