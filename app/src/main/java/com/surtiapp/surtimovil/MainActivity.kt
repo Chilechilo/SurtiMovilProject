@@ -8,6 +8,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
@@ -25,72 +26,76 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : FragmentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val ds = DataStoreManager(this)
 
-        setContent {
-            SurtiMovilTheme {
-                val scope = rememberCoroutineScope()
-                val vm: OnboardingViewModel = viewModel()
-                val navController = rememberNavController()
+        // ✅ Usamos Compose dentro de FragmentActivity
+        val composeView = ComposeView(this).apply {
+            setContent {
+                SurtiMovilTheme {
+                    val scope = rememberCoroutineScope()
+                    val vm: OnboardingViewModel = viewModel()
+                    val navController = rememberNavController()
 
-                // --- Inicialización de dependencias ---
-                val homeApi: HomeApi = remember {
-                    getRetrofitInstance().create(HomeApi::class.java)
-                }
+                    // --- Inicialización de dependencias ---
+                    val homeApi: HomeApi = remember {
+                        getRetrofitInstance().create(HomeApi::class.java)
+                    }
 
-                val homeRepository = remember {
-                    HomeRepository(homeApi)
-                }
+                    val homeRepository = remember { HomeRepository(homeApi) }
 
-                // ✅ Repositorio local del carrito (ya sin Firestore)
-                val cartRepository = remember {
-                    CartRepository
-                }
+                    val cartRepository = remember { CartRepository }
 
-                // ✅ Pasamos ambos repositorios al ViewModelFactory
-                val homeViewModelFactory = remember {
-                    HomeViewModelFactory(
-                        repo = homeRepository,
-                        cartRepository = cartRepository
-                    )
-                }
-                // --- Fin de inicialización ---
+                    val homeViewModelFactory = remember {
+                        HomeViewModelFactory(
+                            repo = homeRepository,
+                            cartRepository = cartRepository
+                        )
+                    }
+                    // --- Fin de inicialización ---
 
-                val onboardingDone: Boolean? by ds.onboardingDoneFlow.collectAsState(initial = null)
+                    val onboardingDone: Boolean? by ds.onboardingDoneFlow.collectAsState(initial = null)
 
-                when (onboardingDone) {
-                    null -> SplashLoader()
-                    false -> OnboardingView(
-                        viewModel = vm,
-                        onFinish = {
-                            scope.launch { ds.setOnboardingDone(true) }
-                        }
-                    )
-                    true -> AppNavHost(
-                        navController = navController,
-                        homeViewModelFactory = homeViewModelFactory,
-                        activity = this
-                    )
+                    when (onboardingDone) {
+                        null -> SplashLoader()
+                        false -> OnboardingView(
+                            viewModel = vm,
+                            onFinish = { scope.launch { ds.setOnboardingDone(true) } }
+                        )
+                        true -> AppNavHost(
+                            navController = navController,
+                            activity = this@MainActivity,
+                            homeViewModelFactory = homeViewModelFactory
+                        )
+                    }
                 }
             }
         }
+
+        // ✅ Asignamos el ComposeView como layout principal
+        setContentView(composeView)
     }
 
+    // --- Retrofit Instance ---
     private fun getRetrofitInstance(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/") // URL base del Gist con productos
+            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/") // Tu endpoint base
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 }
 
+// --- Loader Composable ---
 @Composable
-private fun SplashLoader() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+fun SplashLoader() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
         CircularProgressIndicator()
     }
 }

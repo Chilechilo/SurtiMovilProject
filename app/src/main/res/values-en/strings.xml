@@ -61,7 +61,7 @@
     <string name="confirm_password_label">Confirm Password</string>
     <string name="accept_terms_label">I accept terms and conditions</string>
     <string name="creating_account">Creating account</string>
-    <string name="signup_button_in_login">Don't have an account? Create one</string>
+    <string name="signup_button_in_login">Dont have an account? Create one</string>
     <string name="already_have_account_go_login">Already have an account? Log in</string>
     <string name="signup_button">Create Account</string>
 </resources>
