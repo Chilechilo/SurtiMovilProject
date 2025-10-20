@@ -1,11 +1,9 @@
 package com.surtiapp.surtimovil.homescreen
 
 import RequestCameraPermission
-import androidx.annotation.OptIn
-import androidx.compose.ui.viewinterop.AndroidView
-import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.annotation.OptIn
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -19,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -35,11 +34,13 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.surtiapp.surtimovil.R
+import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
 import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
+import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -47,20 +48,26 @@ import retrofit2.converter.gson.GsonConverterFactory
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
 
 @Composable
-fun HomeScreenView(navController: NavController) {
+fun HomeScreenView(
+    navController: NavController,
+    homeViewModelFactory: HomeViewModelFactory
+) {
     val tabs = listOf(
         TabItem(R.string.tab_catalogo, Icons.Filled.List),
-        TabItem(R.string.tab_pedidos, Icons.Filled.ShoppingCart),
+        TabItem(R.string.tab_pedidos, Icons.Filled.QrCode),
         TabItem(R.string.tab_ayuda, Icons.Filled.Help),
         TabItem(R.string.tab_ofertas, Icons.Filled.LocalOffer),
         TabItem(R.string.tab_mi_cuenta, Icons.Filled.Person),
     )
 
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val carritoViewModel: CarritoViewModel = viewModel()
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = Color.White) {
                 tabs.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -80,48 +87,62 @@ fun HomeScreenView(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogScreen()
-                1 -> OrdersScreen()
-                2 -> HelpScreen()
-                3 -> OffersScreen()
-                4 -> AccountScreen(navController)
+                0 -> CatalogoScreen(
+                    factory = homeViewModelFactory,
+                    snackbarHostState = snackbarHostState,
+                    carritoViewModel = carritoViewModel
+                )
+                1 -> PedidosScreen() // mantiene el lector QR
+                2 -> AyudaScreen()
+                3 -> OfertasScreen()
+                4 -> CuentasScreen(navController)
             }
         }
     }
 }
 
-/* ======= Tabs ======= */
-
+/* ======= Catálogo ======= */
 @Composable
-private fun CatalogScreen() {
-    val retrofit = remember {
-        Retrofit.Builder()
-            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    val api = remember { retrofit.create(HomeApi::class.java) }
-    val repo = remember { HomeRepository(api) }
-    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(repo))
+private fun CatalogoScreen(
+    factory: HomeViewModelFactory,
+    snackbarHostState: SnackbarHostState,
+    carritoViewModel: CarritoViewModel
+) {
+    val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.ui.collectAsState()
+    val localUserId = remember { "local_user_001" }
 
     LaunchedEffect(Unit) {
+        viewModel.setUserId(localUserId)
         viewModel.fetchHome()
     }
 
-    HomeViewProducts(uiState = uiState)
+    LaunchedEffect(key1 = uiState.message) {
+        uiState.message?.let { message ->
+            snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = "OK",
+                duration = SnackbarDuration.Short
+            )
+            viewModel.clearMessage()
+        }
+    }
+
+    HomeViewProducts(
+        uiState = uiState,
+        viewModel = viewModel,
+        carritoViewModel = carritoViewModel
+    )
 }
 
-/* ======= Orders Screen with QR ======= */
-
+/* ======= Pedidos (QR Scanner + Generador) ======= */
 @Composable
-fun OrdersScreen() {
+fun PedidosScreen() {
     var showQR by rememberSaveable { mutableStateOf(false) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showScanner by rememberSaveable { mutableStateOf(false) }
 
-    val viewModel = remember { DeliveryViewModel() } // Simulated ViewModel
+    val viewModel = remember { DeliveryViewModel() }
     val uiState by viewModel.ui.collectAsState()
 
     Column(
@@ -132,7 +153,7 @@ fun OrdersScreen() {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Order Management",
+            text = "Gestión de pedidos",
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.titleLarge
         )
@@ -145,7 +166,7 @@ fun OrdersScreen() {
             showQR = true
             showScanner = false
         }) {
-            Text("Generate QR")
+            Text("Generar QR")
         }
 
         Spacer(Modifier.height(12.dp))
@@ -154,7 +175,7 @@ fun OrdersScreen() {
             showScanner = true
             showQR = false
         }) {
-            Text("Scan QR")
+            Text("Escanear QR")
         }
 
         Spacer(Modifier.height(24.dp))
@@ -162,7 +183,7 @@ fun OrdersScreen() {
         if (showQR && qrBitmap != null) {
             Image(
                 bitmap = qrBitmap!!.asImageBitmap(),
-                contentDescription = "Order QR Code",
+                contentDescription = "Código QR de pedido",
                 modifier = Modifier.size(200.dp)
             )
         }
@@ -182,7 +203,7 @@ fun OrdersScreen() {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CircularProgressIndicator()
                     Spacer(Modifier.height(8.dp))
-                    Text("Verifying delivery...")
+                    Text("Verificando entrega...")
                 }
             }
             uiState.success == true -> {
@@ -205,7 +226,7 @@ fun OrdersScreen() {
     }
 }
 
-/** Generates a QR bitmap */
+/** Genera un QR bitmap */
 private fun generateQRCode(text: String): Bitmap {
     val size = 512
     val bits = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size)
@@ -218,7 +239,7 @@ private fun generateQRCode(text: String): Bitmap {
     return bmp
 }
 
-/** Composable QR scanner using ML Kit */
+/** Composable QR scanner con ML Kit */
 @Composable
 fun QRScannerView(onQRCodeScanned: (String) -> Unit) {
     val context = LocalContext.current
@@ -251,7 +272,7 @@ fun QRScannerView(onQRCodeScanned: (String) -> Unit) {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, analyzer)
             } catch (e: Exception) {
-                Log.e("CameraX", "Error starting camera", e)
+                Log.e("CameraX", "Error iniciando cámara", e)
             }
         }, executor)
 
@@ -259,7 +280,7 @@ fun QRScannerView(onQRCodeScanned: (String) -> Unit) {
     })
 }
 
-/** Processes camera frames for QR detection */
+/** Procesa frames de la cámara para detectar QR */
 @OptIn(ExperimentalGetImage::class)
 private fun processImageProxy(
     scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
@@ -276,7 +297,7 @@ private fun processImageProxy(
                 }
             }
             .addOnFailureListener { e ->
-                Log.e("QRScanner", "Scan error", e)
+                Log.e("QRScanner", "Error al escanear", e)
             }
             .addOnCompleteListener { imageProxy.close() }
     } else {
@@ -284,28 +305,27 @@ private fun processImageProxy(
     }
 }
 
-/* ======= Other Screens ======= */
-
+/* ======= Pantallas secundarias ======= */
 @Composable
-private fun HelpScreen() {
+private fun AyudaScreen() {
     CenterCard(
-        title = stringResource(R.string.ayuda_title),
+        title = stringResource(R.string.tab_ayuda),
         body = stringResource(R.string.ayuda_body)
     )
 }
 
 @Composable
-private fun OffersScreen() {
+private fun OfertasScreen() {
     CenterCard(
-        title = stringResource(R.string.ofertas_title),
+        title = stringResource(R.string.tab_ofertas),
         body = stringResource(R.string.ofertas_body)
     )
 }
 
 @Composable
-private fun AccountScreen(navController: NavController) {
+private fun CuentasScreen(navController: NavController) {
     CenterCard(
-        title = stringResource(R.string.cuenta_title),
+        title = stringResource(R.string.tab_mi_cuenta),
         body = stringResource(R.string.cuenta_body)
     )
     Box(
@@ -318,7 +338,7 @@ private fun AccountScreen(navController: NavController) {
     }
 }
 
-/* ======= Shared Center Card ======= */
+/* ======= Reutilizable ======= */
 @Composable
 private fun CenterCard(title: String, body: String) {
     Box(

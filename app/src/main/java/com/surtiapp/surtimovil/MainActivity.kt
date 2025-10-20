@@ -1,8 +1,6 @@
 package com.surtiapp.surtimovil
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,11 +12,17 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.surtiapp.surtimovil.core.datastore.DataStoreManager
+import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
+import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
+import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
+import com.surtiapp.surtimovil.homescreen.repository.CartRepository
 import com.surtiapp.surtimovil.navigation.AppNavHost
 import com.surtiapp.surtimovil.onboarding.viewmodel.OnboardingViewModel
 import com.surtiapp.surtimovil.onboarding.views.OnboardingView
 import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
 import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,9 +35,32 @@ class MainActivity : FragmentActivity() {
             SurtiMovilTheme {
                 val scope = rememberCoroutineScope()
                 val vm: OnboardingViewModel = viewModel()
+                val navController = rememberNavController()
+
+                // --- Inicialización de dependencias ---
+                val homeApi: HomeApi = remember {
+                    getRetrofitInstance().create(HomeApi::class.java)
+                }
+
+                val homeRepository = remember {
+                    HomeRepository(homeApi)
+                }
+
+                // ✅ Repositorio local del carrito (ya sin Firestore)
+                val cartRepository = remember {
+                    CartRepository
+                }
+
+                // ✅ Pasamos ambos repositorios al ViewModelFactory
+                val homeViewModelFactory = remember {
+                    HomeViewModelFactory(
+                        repo = homeRepository,
+                        cartRepository = cartRepository
+                    )
+                }
+                // --- Fin de inicialización ---
 
                 val onboardingDone: Boolean? by ds.onboardingDoneFlow.collectAsState(initial = null)
-                val navController = rememberNavController()
 
                 when (onboardingDone) {
                     null -> SplashLoader()
@@ -45,11 +72,19 @@ class MainActivity : FragmentActivity() {
                     )
                     true -> AppNavHost(
                         navController = navController,
+                        homeViewModelFactory = homeViewModelFactory,
                         activity = this
                     )
                 }
             }
         }
+    }
+
+    private fun getRetrofitInstance(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/") // URL base del Gist con productos
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
 }
 

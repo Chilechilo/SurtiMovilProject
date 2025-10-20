@@ -8,8 +8,10 @@
     <string name="app_logo_cd">App logo</string>
     <string name="show_password_cd">Show password</string>
     <string name="hide_password_cd">Hide password</string>
+
     <!--Splash-->
     <string name="splash_tagline">SurtiMovil: Order • Receive • Sell</string>
+
     <!--Onboarding-->
     <string name="onb_title_1">Keep your store stocked without wasting time</string>
     <string name="onb_desc_1">From your phone, choose the groceries your business needs. Forget about going out and losing time.</string>
@@ -20,6 +22,7 @@
     <string name="prev">Previous</string>
     <string name="next">Next</string>
     <string name="start">Start</string>
+
     <!--Home-->
     <string name="tab_catalogo">Catalog</string>
     <string name="tab_pedidos">Orders</string>
@@ -37,22 +40,29 @@
     <string name="ayuda_body">Frequently asked questions</string>
     <string name="ofertas_title">Offers</string>
     <string name="ofertas_body">Seasonal offers</string>
+
     <!--Toast-->
     <string name="login_required_fields">Email and password are required</string>
     <string name="login_success">Login successful. Welcome %1$s</string>
     <string name="login_failed">Login failed</string>
     <string name="login_network_error">Network/server error</string>
+
     <!--AuthRepository-->
     <string name="auth_empty_response">Empty server response</string>
     <string name="auth_invalid_credentials">Invalid credentials</string>
     <string name="auth_offline">No connection. Check your network.</string>
     <string name="auth_unexpected_error">Unexpected error</string>
+
+    <!--Carrito-->
+    <string name="tab_carrito">Cart</string>
+
     <!--Sign In-->
     <string name="name_label">Name</string>
     <string name="confirm_password_label">Confirm Password</string>
     <string name="accept_terms_label">I accept terms and conditions</string>
     <string name="creating_account">Creating account</string>
-    <string name="signup_button_in_login">Don\'t have an account? Create one</string>
+    <string name="signup_button_in_login">Don't have an account? Create one</string>
     <string name="already_have_account_go_login">Already have an account? Log in</string>
     <string name="signup_button">Create Account</string>
 </resources>
+
