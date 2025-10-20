@@ -59,6 +59,7 @@ dependencies {
 
     // --- Navegación ---
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation(libs.androidx.fragment.ktx)
 
     // --- ViewModel ---
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
@@ -77,6 +78,22 @@ dependencies {
     implementation("com.google.android.material:material:1.11.0")
     implementation("com.google.code.gson:gson:2.10.1")
 
+    // --- Splash ---
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    implementation("androidx.compose.material3:material3:1.2.1")
+
+    // --- Face ID ---
+    implementation("androidx.biometric:biometric:1.2.0-alpha05")
+
+    // --- CameraX y ML Kit ---
+    implementation("androidx.camera:camera-camera2:1.3.4")
+    implementation("androidx.camera:camera-lifecycle:1.3.4")
+    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // --- ZXing para generar QR ---
+    implementation("com.google.zxing:core:3.5.3")
+
     // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -86,3 +103,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+

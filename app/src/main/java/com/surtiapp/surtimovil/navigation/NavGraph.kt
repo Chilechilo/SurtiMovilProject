@@ -1,17 +1,20 @@
 package com.surtiapp.surtimovil.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.surtiapp.surtimovil.Signin.views.SigninView
 import com.surtiapp.surtimovil.homescreen.HomeScreenView
-import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory // <-- Importación necesaria
+import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.login.views.LoginView
+import android.util.Log
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    // ¡Añadir el factory para inyectar HomeViewModel!
+    activity: FragmentActivity,
     homeViewModelFactory: HomeViewModelFactory
 ) {
     NavHost(
@@ -19,12 +22,22 @@ fun AppNavHost(
         startDestination = "home"
     ) {
         composable("home") {
-            // ¡Pasar el factory a la vista principal!
             HomeScreenView(
                 navController = navController,
                 homeViewModelFactory = homeViewModelFactory
             )
         }
-        composable("login") { LoginView(navController) }
+
+        composable("signin") {
+            SigninView(navController)
+        }
+
+        composable("login") {
+            Log.d(
+                "BiometricCheck",
+                "✅ Activity pasada desde MainActivity: ${activity.localClassName}"
+            )
+            LoginView(navController, activity)
+        }
     }
 }

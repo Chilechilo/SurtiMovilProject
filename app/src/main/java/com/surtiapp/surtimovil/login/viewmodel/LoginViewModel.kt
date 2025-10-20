@@ -63,4 +63,12 @@ class LoginViewModel(
             }
         }
     }
+    fun loginWithBiometric() {
+        // Aquí puedes implementar lógica para auto-login,
+        // por ejemplo usando DataStore o SharedPreferences para recuperar token guardado
+        viewModelScope.launch {
+            // Simulación de éxito
+            _loginSuccessEvents.send(Unit)
+        }
+    }
 }
