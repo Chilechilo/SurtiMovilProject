@@ -12,9 +12,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.firestore.FirebaseFirestore
-import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.datastore.DataStoreManager
+import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.homescreen.repository.CartRepository
@@ -23,6 +22,8 @@ import com.surtiapp.surtimovil.onboarding.viewmodel.OnboardingViewModel
 import com.surtiapp.surtimovil.onboarding.views.OnboardingView
 import com.surtiapp.surtimovil.ui.theme.SurtiMovilTheme
 import kotlinx.coroutines.launch
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,33 +38,29 @@ class MainActivity : ComponentActivity() {
                 val vm: OnboardingViewModel = viewModel()
                 val navController = rememberNavController()
 
-                // --- INICIALIZACIÓN DE DEPENDENCIAS CORREGIDA Y USANDO 'remember' ---
-
-                // 1. Instancia de Retrofit API (DEBES DEFINIR getRetrofitInstance() en tu proyecto)
-                // Usamos 'remember' para no recrear el objeto en cada recomposición.
+                // --- Inicialización de dependencias ---
                 val homeApi: HomeApi = remember {
-                    // REEMPLAZA ESTO: Asume que tienes una función global que devuelve la interfaz.
                     getRetrofitInstance().create(HomeApi::class.java)
                 }
 
-                // 2. Instancia de Firestore
-                val firestoreInstance = remember {
-                    FirebaseFirestore.getInstance()
-                }
-
-                // 3. Repositorios y Factory
                 val homeRepository = remember {
                     HomeRepository(homeApi)
                 }
+
+                // ✅ Repositorio local del carrito (ya sin Firestore)
                 val cartRepository = remember {
-                    CartRepository(firestoreInstance)
+                    CartRepository
                 }
+
+                // ✅ Pasamos ambos repositorios al ViewModelFactory
                 val homeViewModelFactory = remember {
-                    HomeViewModelFactory(homeRepository, cartRepository)
+                    HomeViewModelFactory(
+                        repo = homeRepository,
+                        cartRepository = cartRepository
+                    )
                 }
 
-                // --- FIN DE LA INICIALIZACIÓN ---
-
+                // --- Fin de inicialización ---
 
                 val onboardingDone: Boolean? by ds.onboardingDoneFlow.collectAsState(initial = null)
 
@@ -75,23 +72,20 @@ class MainActivity : ComponentActivity() {
                             scope.launch { ds.setOnboardingDone(true) }
                         }
                     )
-                    // NOTA: Cuando pasas la Factory al AppNavHost, los ViewModels en ese host
-                    // deberán usarla para obtener las dependencias (como HomeViewModel).
                     true -> AppNavHost(
                         navController = navController,
-                        homeViewModelFactory = homeViewModelFactory // <-- Posiblemente necesites pasarla aquí
+                        homeViewModelFactory = homeViewModelFactory
                     )
                 }
             }
         }
     }
 
-    // Función de ejemplo. DEBES implementarla en tu proyecto.
-    private fun getRetrofitInstance(): retrofit2.Retrofit {
-        // Implementación de tu cliente Retrofit (ejemplo, ajusta según tu código)
-        // val client = OkHttpClient.Builder()...
-        // return Retrofit.Builder()...
-        TODO("Debes implementar la inicialización de Retrofit aquí o en un objeto/clase separada.")
+    private fun getRetrofitInstance(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/") // URL base del Gist con productos
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
     }
 }
 

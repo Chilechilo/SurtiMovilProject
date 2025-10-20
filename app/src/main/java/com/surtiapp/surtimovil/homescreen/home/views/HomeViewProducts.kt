@@ -6,103 +6,161 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeUiState
+import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.model.dto.Category
 import com.surtiapp.surtimovil.homescreen.model.dto.Product
-// ------------------------------------------
-// NUEVAS IMPORTACIONES PARA EL CARRITO Y UI
-import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.foundation.BorderStroke
-// ------------------------------------------
-
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeViewProducts(
     uiState: HomeUiState,
     viewModel: HomeViewModel,
+    carritoViewModel: CarritoViewModel,
     modifier: Modifier = Modifier
 ) {
-    // ESTADO AÑADIDO: Mantiene el producto seleccionado para mostrar el modal
-    var selectedProduct: Product? by remember { mutableStateOf(null) }
+    val productosCarrito by carritoViewModel.productosEnCarrito.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    Box(modifier = modifier.fillMaxSize()) {
-        when {
-            uiState.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { innerPadding ->
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            uiState.error != null -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = uiState.error, color = MaterialTheme.colorScheme.error)
-                }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.White),
-                    contentPadding = PaddingValues(vertical = 8.dp)
-                ) {
-                    // Pasar el estado de selección a CategoryRow
-                    items(uiState.categorias) { category ->
-                        CategoryRow(
-                            category = category,
-                            onProductClick = { product -> selectedProduct = product } // Se define el callback
+
+                uiState.error != null -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        Text(
+                            text = uiState.error,
+                            color = MaterialTheme.colorScheme.error
                         )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
+                        // 🔹 Mostrar categorías y productos
+                        items(uiState.categorias) { category ->
+                            CategoryRow(
+                                category = category,
+                                onAddToCart = { product ->
+                                    // Crear objeto del carrito con ID único
+                                    val productoCarrito =
+                                        com.surtiapp.surtimovil.Addcarrito.model.Producto(
+                                            id = "${category.categoria}_${product.id}",
+                                            nombre = product.nombre,
+                                            descripcion = "",
+                                            precio = product.precio,
+                                            imageUrl = product.imagen,
+                                            cantidadEnCarrito = 1
+                                        )
+                                    carritoViewModel.addCarrito(productoCarrito)
+
+                                    // Mostrar Snackbar de confirmación
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Añadido: ${product.nombre}",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            )
+                        }
+
+                        // 🔹 Mostrar carrito al final si hay productos
+                        if (productosCarrito.isNotEmpty()) {
+                            item {
+                                Divider(Modifier.padding(vertical = 8.dp))
+                                Text(
+                                    text = "🛒 Carrito (${productosCarrito.size})",
+                                    style = MaterialTheme.typography.titleMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    modifier = Modifier.padding(16.dp)
+                                )
+
+                                productosCarrito.forEach { producto ->
+                                    Row(
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(producto.nombre)
+                                        Text(
+                                            text = "x${producto.cantidadEnCarrito}",
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+
+                                val total = productosCarrito.sumOf {
+                                    it.precio * it.cantidadEnCarrito
+                                }
+
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        text = "Total: $${"%.2f".format(total)}",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    Button(
+                                        onClick = {
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Gracias por tu compra 🛒✨")
+                                            }
+                                            carritoViewModel.clearCarrito()
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Pagar")
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
-
-    // ******************************************************
-    // ACTIVACIÓN DEL MODAL (BOTTOM SHEET) - CONEXIÓN FINAL
-    // ******************************************************
-    selectedProduct?.let { product ->
-        AddToCartBottomSheet(
-            product = product,
-            onDismiss = { selectedProduct = null },
-            // 🎯 CORRECCIÓN CLAVE: La lambda del modal recibe DOS argumentos,
-            // pero solo usamos 'productToAdd' para llamar a la función del VM.
-            onAddToCart = { productToAdd, quantity ->
-
-                // Antes: viewModel.addToCart(selectedProduct, quantity) <--- ESTO ES DEMASIADOS ARGUMENTOS
-
-                // AHORA: Llama a la función del ViewModel que SOLO acepta el Producto
-                viewModel.addToCart(productToAdd) // ✅ ¡Solo un argumento!
-
-                selectedProduct = null // Cierra el modal después de añadir
-            }
-        )
-    }
 }
 
-// ------------------------------------------------------------
-// Se modifica la firma de CategoryRow para recibir la función de click
-// ------------------------------------------------------------
 @Composable
-fun CategoryRow(category: Category, onProductClick: (Product) -> Unit) {
+fun CategoryRow(
+    category: Category,
+    onAddToCart: (Product) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -122,7 +180,7 @@ fun CategoryRow(category: Category, onProductClick: (Product) -> Unit) {
             items(category.productos) { product ->
                 ProductCard(
                     product = product,
-                    onAddToCartClick = onProductClick, // Se pasa la acción
+                    onAddToCartClick = onAddToCart,
                     modifier = Modifier.padding(horizontal = 6.dp)
                 )
             }
@@ -130,13 +188,10 @@ fun CategoryRow(category: Category, onProductClick: (Product) -> Unit) {
     }
 }
 
-// ------------------------------------------------------------
-// Se modifica la firma de ProductCard para usar el callback del click
-// ------------------------------------------------------------
 @Composable
 fun ProductCard(
     product: Product,
-    onAddToCartClick: (Product) -> Unit, // Nuevo callback para el click
+    onAddToCartClick: (Product) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -174,27 +229,28 @@ fun ProductCard(
 
             Text(
                 text = product.nombre,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                ),
                 modifier = Modifier.padding(top = 8.dp),
                 maxLines = 2
             )
 
-            // Fila de Precio y Botón de Carrito
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Precio (asumo que 'precio' es un Double en tu Product DTO)
                 Text(
                     text = "$${"%.2f".format(product.precio)}",
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.primary,
                 )
 
-                // Botón de Añadir al Carrito
                 Button(
-                    // Llama al callback para mostrar el BottomSheet (a través de onProductClick en HomeViewProducts)
                     onClick = { onAddToCartClick(product) },
                     modifier = Modifier.height(30.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)

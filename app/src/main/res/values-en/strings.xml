@@ -47,4 +47,6 @@
     <string name="auth_invalid_credentials">Invalid credentials</string>
     <string name="auth_offline">No connection. Check your network.</string>
     <string name="auth_unexpected_error">Unexpected error</string>
+    <!--Carrito-->
+    <string name="tab_carrito">Cart</string>
 </resources>
