@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -45,6 +46,12 @@ import kotlinx.coroutines.flow.collectLatest
 fun LoginView(navController: NavController, activity: FragmentActivity) {
     Log.d("BiometricCheck", "🚀 Entrando a LoginView composable")
 
+    // ✅ Bloquea el botón físico "Atrás" del sistema
+    BackHandler(enabled = true) {
+        // Evita que el usuario regrese al Home sin autenticarse
+        Log.d("BackHandler", "Botón atrás desactivado en pantalla de login 🚫")
+    }
+
     // --- ViewModel + Repository ---
     val app = LocalContext.current.applicationContext as Application
     val repo = remember { AuthRepository(RetrofitProvider.authApi, app) }
@@ -75,6 +82,19 @@ fun LoginView(navController: NavController, activity: FragmentActivity) {
 
     LaunchedEffect(vm) {
         vm.loginSuccessEvents.collectLatest {
+            Log.d("LoginView", "✅ Login exitoso detectado")
+
+            // 🔥 Marca el login como exitoso para el Home
+            navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.set("loggedIn", true)
+
+            // Si tuvieras datos del usuario:
+            navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.set("username", ui.email)
+
+            // Cierra el Login y vuelve al Home
             navController.popBackStack()
         }
     }

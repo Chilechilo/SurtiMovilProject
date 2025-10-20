@@ -1,15 +1,18 @@
 package com.surtiapp.surtimovil.homescreen
 
-import RequestCameraPermission
 import android.graphics.Bitmap
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.OptIn
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -17,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,14 +44,17 @@ import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
+import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
 import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
-import com.surtiapp.surtimovil.home.views.HomeViewProducts
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 /* ======= Bottom navigation setup ======= */
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenView(
     navController: NavController,
@@ -65,7 +72,41 @@ fun HomeScreenView(
     val snackbarHostState = remember { SnackbarHostState() }
     val carritoViewModel: CarritoViewModel = viewModel()
 
+    // 🌟 Estado de sesión
+    var isLoggedIn by rememberSaveable { mutableStateOf(false) }
+    var userName by rememberSaveable { mutableStateOf("Usuario") }
+
+    // ✅ Detectar regreso del login
+    val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { entry ->
+            val fromLogin = entry.destination.route == "home" &&
+                    entry.savedStateHandle?.get<Boolean>("loggedIn") == true
+            if (fromLogin) {
+                isLoggedIn = true
+                userName = entry.savedStateHandle?.get<String>("username") ?: "Usuario"
+            }
+        }
+    }
+
     Scaffold(
+        // ✅ Barra superior solo si hay sesión iniciada
+        topBar = {
+            if (isLoggedIn) {
+                CenterAlignedTopAppBar(
+                    title = { Text("SurtiMóvil") },
+                    actions = {
+                        IconButton(onClick = { selectedIndex = 4 }) {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Perfil",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                )
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar(containerColor = Color.White) {
@@ -93,10 +134,18 @@ fun HomeScreenView(
                     snackbarHostState = snackbarHostState,
                     carritoViewModel = carritoViewModel
                 )
-                1 -> PedidosScreen() // mantiene el lector QR
+                1 -> PedidosScreen()
                 2 -> AyudaScreen()
                 3 -> OfertasScreen()
-                4 -> CuentasScreen(navController)
+                4 -> CuentasScreen(
+                    navController = navController,
+                    isLoggedIn = isLoggedIn,
+                    userName = userName,
+                    onLogout = {
+                        isLoggedIn = false
+                        userName = ""
+                    }
+                )
             }
         }
     }
@@ -306,40 +355,76 @@ private fun processImageProxy(
     }
 }
 
-/* ======= Pantallas secundarias ======= */
+/* ======= Pestaña de cuenta (login / logout dinámico) ======= */
 @Composable
-private fun AyudaScreen() {
-    CenterCard(
-        title = stringResource(R.string.tab_ayuda),
-        body = stringResource(R.string.ayuda_body)
-    )
-}
-
-@Composable
-private fun OfertasScreen() {
-    CenterCard(
-        title = stringResource(R.string.tab_ofertas),
-        body = stringResource(R.string.ofertas_body)
-    )
-}
-
-@Composable
-private fun CuentasScreen(navController: NavController) {
-    CenterCard(
-        title = stringResource(R.string.tab_mi_cuenta),
-        body = stringResource(R.string.cuenta_body)
-    )
+private fun CuentasScreen(
+    navController: NavController,
+    isLoggedIn: Boolean,
+    userName: String,
+    onLogout: () -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Button(onClick = { navController.navigate("login") }) {
-            Text(stringResource(R.string.go_login))
+        if (isLoggedIn) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Usuario",
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                )
+                Text(
+                    text = "Bienvenido, $userName",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
+                )
+                Button(
+                    onClick = { onLogout() },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Cerrar sesión")
+                }
+            }
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Invitado",
+                    modifier = Modifier.size(80.dp)
+                )
+
+                var isNavigating by remember { mutableStateOf(false) }
+
+                Button(
+                    onClick = {
+                        if (!isNavigating) {
+                            isNavigating = true
+                            navController.navigate("login")
+                        }
+                    },
+                    enabled = !isNavigating
+                ) {
+                    if (isNavigating) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 8.dp)
+                        )
+                        Text("Abriendo...")
+                    } else {
+                        Text("Iniciar sesión")
+                    }
+                }
+            }
         }
     }
 }
 
-/* ======= Reutilizable ======= */
+/* ======= Tarjeta genérica reutilizable ======= */
 @Composable
 private fun CenterCard(title: String, body: String) {
     Box(
@@ -355,5 +440,23 @@ private fun CenterCard(title: String, body: String) {
                 Text(text = body, style = MaterialTheme.typography.bodyMedium)
             }
         }
+    }
+}
+
+/* ======= Permiso de cámara ======= */
+@Composable
+fun RequestCameraPermission() {
+    val context = LocalContext.current
+    val permission = android.Manifest.permission.CAMERA
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            Toast.makeText(context, "Se requiere permiso de cámara", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        launcher.launch(permission)
     }
 }
