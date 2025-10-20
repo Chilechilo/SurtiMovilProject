@@ -7,20 +7,25 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.surtiapp.surtimovil.Signin.views.SigninView
 import com.surtiapp.surtimovil.homescreen.HomeScreenView
+import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.login.views.LoginView
 import android.util.Log
 
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    activity: FragmentActivity
+    activity: FragmentActivity,
+    homeViewModelFactory: HomeViewModelFactory
 ) {
     NavHost(
         navController = navController,
         startDestination = "home"
     ) {
         composable("home") {
-            HomeScreenView(navController)
+            HomeScreenView(
+                navController = navController,
+                homeViewModelFactory = homeViewModelFactory
+            )
         }
 
         composable("signin") {
@@ -28,7 +33,10 @@ fun AppNavHost(
         }
 
         composable("login") {
-            Log.d("BiometricCheck", "✅ Activity pasada desde MainActivity: ${activity.localClassName}")
+            Log.d(
+                "BiometricCheck",
+                "✅ Activity pasada desde MainActivity: ${activity.localClassName}"
+            )
             LoginView(navController, activity)
         }
     }

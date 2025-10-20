@@ -8,8 +8,10 @@
     <string name="app_logo_cd">Logotipo de la app</string>
     <string name="show_password_cd">Mostrar contraseña</string>
     <string name="hide_password_cd">Ocultar contraseña</string>
+
     <!--Splash-->
     <string name="splash_tagline">SurtiMovil: Pide • Recibe • Vende</string>
+
     <!--Onboarding-->
     <string name="onb_title_1">Tu tienda siempre llena, sin perder tiempo</string>
     <string name="onb_desc_1">Desde tu celular, elige los abarrotes que tu negocio necesita. Olvídate de salir y perder tiempo.</string>
@@ -20,6 +22,7 @@
     <string name="prev">Anterior</string>
     <string name="next">Siguiente</string>
     <string name="start">Empezar</string>
+
     <!--Home-->
     <string name="tab_catalogo">Catálogo</string>
     <string name="tab_pedidos">Pedidos</string>
@@ -37,22 +40,29 @@
     <string name="ayuda_body">Preguntas frecuentes</string>
     <string name="ofertas_title">Ofertas</string>
     <string name="ofertas_body">Ofertas de temporada</string>
+
     <!--Toast-->
     <string name="login_required_fields">Email y password son obligatorios</string>
     <string name="login_success">Login exitoso. Bienvenido %1$s</string>
     <string name="login_failed">Login fallido</string>
     <string name="login_network_error">Error de red/servidor</string>
+
     <!--AuthRepository-->
     <string name="auth_empty_response">Respuesta vacía del servidor</string>
     <string name="auth_invalid_credentials">Credenciales inválidas</string>
     <string name="auth_offline">Sin conexión. Verifica tu red.</string>
     <string name="auth_unexpected_error">Error inesperado</string>
+
+    <!--Carrito-->
+    <string name="tab_carrito">Carrito</string>
+
     <!--Sign In-->
     <string name="name_label">Nombre</string>
     <string name="confirm_password_label">Confirmar contraseña</string>
     <string name="accept_terms_label">Acepto términos y condiciones</string>
     <string name="creating_account">Creando cuenta…</string>
-    <string name="signup_button_in_login">¿Aun no tienes una cuenta? Crea una</string>
+    <string name="signup_button_in_login">¿Aún no tienes una cuenta? Crea una</string>
     <string name="already_have_account_go_login">¿Ya tienes cuenta? Inicia sesión</string>
     <string name="signup_button">Crear cuenta</string>
 </resources>
+
