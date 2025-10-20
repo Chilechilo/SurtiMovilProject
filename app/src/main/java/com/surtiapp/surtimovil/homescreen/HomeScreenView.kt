@@ -1,5 +1,15 @@
 package com.surtiapp.surtimovil.homescreen
 
+import RequestCameraPermission
+import androidx.annotation.OptIn
+import androidx.compose.ui.viewinterop.AndroidView
+import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
+import android.graphics.Bitmap
+import android.util.Log
+import androidx.camera.core.*
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -9,21 +19,31 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
-import retrofit2.Retrofit // <-- NUEVO
-import retrofit2.converter.gson.GsonConverterFactory // <-- NUEVO
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
-// Ahora los tabs guardan IDs en vez de String directo
+/* ======= Bottom navigation setup ======= */
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
 
 @Composable
@@ -60,25 +80,20 @@ fun HomeScreenView(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogoScreen() // Aquí llamamos a la función actualizada con la lógica de productos
-                1 -> PedidosScreen()
-                2 -> AyudaScreen()
-                3 -> OfertasScreen()
-                4 -> CuentasScreen(navController)
+                0 -> CatalogScreen()
+                1 -> OrdersScreen()
+                2 -> HelpScreen()
+                3 -> OffersScreen()
+                4 -> AccountScreen(navController)
             }
         }
     }
 }
 
-/* ======= Contenido de cada pestaña ======= */
+/* ======= Tabs ======= */
 
 @Composable
-private fun CatalogoScreen() {
-    // ----------------------------------------------------
-    // Lógica para cargar el Catálogo de Productos (ÍNDICE 0)
-    // ----------------------------------------------------
-
-    // 1. Inicialización de Retrofit y Repositorio (usamos remember para que solo se haga una vez)
+private fun CatalogScreen() {
     val retrofit = remember {
         Retrofit.Builder()
             .baseUrl("https://gist.githubusercontent.com/Manuel2210337/")
@@ -88,32 +103,191 @@ private fun CatalogoScreen() {
 
     val api = remember { retrofit.create(HomeApi::class.java) }
     val repo = remember { HomeRepository(api) }
-
-    // 2. Inicialización del ViewModel
     val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(repo))
-
-    // 3. Observar el estado de la UI
     val uiState by viewModel.ui.collectAsState()
 
-    // 4. Iniciar la carga de datos (solo al entrar a la pantalla)
     LaunchedEffect(Unit) {
         viewModel.fetchHome()
     }
 
-    // 5. Renderizar la vista real de productos
     HomeViewProducts(uiState = uiState)
 }
 
-@Composable
-private fun PedidosScreen() {
-    CenterCard(
-        title = stringResource(R.string.pedidos_title),
-        body = stringResource(R.string.pedidos_body)
-    )
-}
+/* ======= Orders Screen with QR ======= */
 
 @Composable
-private fun AyudaScreen() {
+fun OrdersScreen() {
+    var showQR by rememberSaveable { mutableStateOf(false) }
+    var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var showScanner by rememberSaveable { mutableStateOf(false) }
+
+    val viewModel = remember { DeliveryViewModel() } // Simulated ViewModel
+    val uiState by viewModel.ui.collectAsState()
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Order Management",
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        Button(onClick = {
+            val orderId = "order_12345"
+            qrBitmap = generateQRCode(orderId)
+            showQR = true
+            showScanner = false
+        }) {
+            Text("Generate QR")
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        Button(onClick = {
+            showScanner = true
+            showQR = false
+        }) {
+            Text("Scan QR")
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        if (showQR && qrBitmap != null) {
+            Image(
+                bitmap = qrBitmap!!.asImageBitmap(),
+                contentDescription = "Order QR Code",
+                modifier = Modifier.size(200.dp)
+            )
+        }
+
+        if (showScanner) {
+            RequestCameraPermission()
+            QRScannerView(onQRCodeScanned = { code ->
+                showScanner = false
+                viewModel.confirmDelivery(code)
+            })
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        when {
+            uiState.loading -> {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator()
+                    Spacer(Modifier.height(8.dp))
+                    Text("Verifying delivery...")
+                }
+            }
+            uiState.success == true -> {
+                Text(
+                    text = "✅ ${uiState.message}",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+            uiState.success == false -> {
+                Text(
+                    text = "❌ ${uiState.message}",
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+/** Generates a QR bitmap */
+private fun generateQRCode(text: String): Bitmap {
+    val size = 512
+    val bits = QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size)
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    for (x in 0 until size) {
+        for (y in 0 until size) {
+            bmp.setPixel(x, y, if (bits[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+        }
+    }
+    return bmp
+}
+
+/** Composable QR scanner using ML Kit */
+@Composable
+fun QRScannerView(onQRCodeScanned: (String) -> Unit) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+
+    AndroidView(factory = { ctx ->
+        val previewView = PreviewView(ctx)
+        val executor = ContextCompat.getMainExecutor(ctx)
+        val scanner = BarcodeScanning.getClient()
+
+        cameraProviderFuture.addListener({
+            val cameraProvider = cameraProviderFuture.get()
+            val preview = Preview.Builder().build().also {
+                it.setSurfaceProvider(previewView.surfaceProvider)
+            }
+
+            val analyzer = ImageAnalysis.Builder()
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+                .also {
+                    it.setAnalyzer(executor) { imageProxy ->
+                        processImageProxy(scanner, imageProxy, onQRCodeScanned)
+                    }
+                }
+
+            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+            try {
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, analyzer)
+            } catch (e: Exception) {
+                Log.e("CameraX", "Error starting camera", e)
+            }
+        }, executor)
+
+        previewView
+    })
+}
+
+/** Processes camera frames for QR detection */
+@OptIn(ExperimentalGetImage::class)
+private fun processImageProxy(
+    scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
+    imageProxy: ImageProxy,
+    onQRCodeScanned: (String) -> Unit
+) {
+    val mediaImage = imageProxy.image
+    if (mediaImage != null) {
+        val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+        scanner.process(image)
+            .addOnSuccessListener { barcodes ->
+                for (barcode in barcodes) {
+                    barcode.rawValue?.let { onQRCodeScanned(it) }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("QRScanner", "Scan error", e)
+            }
+            .addOnCompleteListener { imageProxy.close() }
+    } else {
+        imageProxy.close()
+    }
+}
+
+/* ======= Other Screens ======= */
+
+@Composable
+private fun HelpScreen() {
     CenterCard(
         title = stringResource(R.string.ayuda_title),
         body = stringResource(R.string.ayuda_body)
@@ -121,7 +295,7 @@ private fun AyudaScreen() {
 }
 
 @Composable
-private fun OfertasScreen() {
+private fun OffersScreen() {
     CenterCard(
         title = stringResource(R.string.ofertas_title),
         body = stringResource(R.string.ofertas_body)
@@ -129,7 +303,7 @@ private fun OfertasScreen() {
 }
 
 @Composable
-private fun CuentasScreen(navController: NavController) {
+private fun AccountScreen(navController: NavController) {
     CenterCard(
         title = stringResource(R.string.cuenta_title),
         body = stringResource(R.string.cuenta_body)
@@ -144,6 +318,7 @@ private fun CuentasScreen(navController: NavController) {
     }
 }
 
+/* ======= Shared Center Card ======= */
 @Composable
 private fun CenterCard(title: String, body: String) {
     Box(
