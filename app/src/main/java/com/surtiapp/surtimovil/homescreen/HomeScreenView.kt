@@ -14,20 +14,26 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+
+// *** IMPORTACIÓN NECESARIA PARA FIREBASE AUTH ***
+import com.google.firebase.auth.FirebaseAuth
+// ***********************************************
+
 import com.surtiapp.surtimovil.R
-import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
-import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
-import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
-import retrofit2.Retrofit // <-- NUEVO
-import retrofit2.converter.gson.GsonConverterFactory // <-- NUEVO
+import androidx.compose.ui.graphics.Color
+// IMPORTACIÓN CORREGIDA: Asumiendo que 'HomeViewProducts' está aquí, ajusta si es necesario
+import com.surtiapp.surtimovil.home.views.HomeViewProducts
+import kotlinx.coroutines.launch // Necesario para el scope.launch si se usa
 
-// Ahora los tabs guardan IDs en vez de String directo
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
 
 @Composable
-fun HomeScreenView(navController: NavController) {
+fun HomeScreenView(
+    navController: NavController,
+    homeViewModelFactory: HomeViewModelFactory
+) {
     val tabs = listOf(
         TabItem(R.string.tab_catalogo, Icons.Filled.List),
         TabItem(R.string.tab_pedidos, Icons.Filled.ShoppingCart),
@@ -37,10 +43,14 @@ fun HomeScreenView(navController: NavController) {
     )
 
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = Color.White
+            ) {
                 tabs.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -60,7 +70,7 @@ fun HomeScreenView(navController: NavController) {
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedIndex) {
-                0 -> CatalogoScreen() // Aquí llamamos a la función actualizada con la lógica de productos
+                0 -> CatalogoScreen(factory = homeViewModelFactory, snackbarHostState = snackbarHostState)
                 1 -> PedidosScreen()
                 2 -> AyudaScreen()
                 3 -> OfertasScreen()
@@ -70,44 +80,62 @@ fun HomeScreenView(navController: NavController) {
     }
 }
 
-/* ======= Contenido de cada pestaña ======= */
+// --------------------------------------------------
 
 @Composable
-private fun CatalogoScreen() {
-    // ----------------------------------------------------
-    // Lógica para cargar el Catálogo de Productos (ÍNDICE 0)
-    // ----------------------------------------------------
+private fun CatalogoScreen(
+    factory: HomeViewModelFactory,
+    snackbarHostState: SnackbarHostState
+) {
+    // 1. Inicialización ÚNICA del ViewModel usando la Factory inyectada
+    val viewModel: HomeViewModel = viewModel(factory = factory)
 
-    // 1. Inicialización de Retrofit y Repositorio (usamos remember para que solo se haga una vez)
-    val retrofit = remember {
-        Retrofit.Builder()
-            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/")
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    val api = remember { retrofit.create(HomeApi::class.java) }
-    val repo = remember { HomeRepository(api) }
-
-    // 2. Inicialización del ViewModel
-    val viewModel: HomeViewModel = viewModel(factory = HomeViewModelFactory(repo))
-
-    // 3. Observar el estado de la UI
+    // 2. Observar el estado de la UI (usando 'uiState' o el nombre que tenga tu StateFlow)
     val uiState by viewModel.ui.collectAsState()
 
-    // 4. Iniciar la carga de datos (solo al entrar a la pantalla)
+    // 3. Obtener el scope para llamadas que no son Compose (aunque LaunchedEffect ya lo da)
+    // Lo mantendremos simple, usando el contexto de LaunchedEffect
+    // val scope = rememberCoroutineScope() // No es necesario si no lo usas
+
+    // 4. Lógica de inicio y manejo de datos (Solo se ejecuta una vez al inicio)
     LaunchedEffect(Unit) {
+        // A. OBTENER ID DEL USUARIO DE FIREBASE AUTH
+        val firebaseUser = FirebaseAuth.getInstance().currentUser
+        val userId = firebaseUser?.uid ?: "anonymous_user"
+
+        // ❌ Se eliminaron las líneas duplicadas de viewModel y uiState aquí dentro. ❌
+
+        // B. ESTABLECER EL ID EN EL VIEWMODEL para usar en Firestore
+        viewModel.setUserId(userId)
+
+        // C. INICIAR LA CARGA DE DATOS
         viewModel.fetchHome()
     }
 
-    // 5. Renderizar la vista real de productos
-    HomeViewProducts(uiState = uiState)
+    // 5. Observar los mensajes del ViewModel y mostrar Snackbar
+    LaunchedEffect(key1 = uiState.message) {
+        uiState.message?.let { message ->
+            // Ejecuta la función suspend (showSnackbar) directamente en el contexto LaunchedEffect
+            snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = "OK",
+                duration = SnackbarDuration.Short
+            )
+            // Lógica simple para limpiar el estado (Accede al viewModel global)
+            viewModel.clearMessage()
+        }
+    } // ⚠️ Cierre CORRECTO del LaunchedEffect ⚠️
+
+    // 6. Renderizar la vista real de productos
+    // ¡Este código estaba fuera de la función CatalogoScreen debido a un cierre de llave extra!
+    HomeViewProducts(uiState = uiState, viewModel = viewModel)
 }
+
 
 @Composable
 private fun PedidosScreen() {
     CenterCard(
-        title = stringResource(R.string.pedidos_title),
+        title = stringResource(R.string.tab_pedidos),
         body = stringResource(R.string.pedidos_body)
     )
 }
@@ -115,7 +143,7 @@ private fun PedidosScreen() {
 @Composable
 private fun AyudaScreen() {
     CenterCard(
-        title = stringResource(R.string.ayuda_title),
+        title = stringResource(R.string.tab_ayuda),
         body = stringResource(R.string.ayuda_body)
     )
 }
@@ -123,7 +151,7 @@ private fun AyudaScreen() {
 @Composable
 private fun OfertasScreen() {
     CenterCard(
-        title = stringResource(R.string.ofertas_title),
+        title = stringResource(R.string.tab_ofertas),
         body = stringResource(R.string.ofertas_body)
     )
 }
@@ -131,7 +159,7 @@ private fun OfertasScreen() {
 @Composable
 private fun CuentasScreen(navController: NavController) {
     CenterCard(
-        title = stringResource(R.string.cuenta_title),
+        title = stringResource(R.string.tab_mi_cuenta),
         body = stringResource(R.string.cuenta_body)
     )
     Box(

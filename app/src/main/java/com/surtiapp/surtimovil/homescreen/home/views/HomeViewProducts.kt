@@ -1,6 +1,7 @@
-package com.surtiapp.surtimovil.homescreen.home.views
+package com.surtiapp.surtimovil.home.views
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -8,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -24,12 +25,26 @@ import coil.compose.rememberAsyncImagePainter
 import com.surtiapp.surtimovil.homescreen.home.HomeUiState
 import com.surtiapp.surtimovil.homescreen.model.dto.Category
 import com.surtiapp.surtimovil.homescreen.model.dto.Product
+// ------------------------------------------
+// NUEVAS IMPORTACIONES PARA EL CARRITO Y UI
+import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddShoppingCart
+import androidx.compose.foundation.BorderStroke
+// ------------------------------------------
+
 
 @Composable
 fun HomeViewProducts(
     uiState: HomeUiState,
+    viewModel: HomeViewModel,
     modifier: Modifier = Modifier
 ) {
+    // ESTADO AÑADIDO: Mantiene el producto seleccionado para mostrar el modal
+    var selectedProduct: Product? by remember { mutableStateOf(null) }
+
     Box(modifier = modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> {
@@ -44,51 +59,99 @@ fun HomeViewProducts(
             }
             else -> {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.White),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
+                    // Pasar el estado de selección a CategoryRow
                     items(uiState.categorias) { category ->
-                        CategoryRow(category)
+                        CategoryRow(
+                            category = category,
+                            onProductClick = { product -> selectedProduct = product } // Se define el callback
+                        )
                     }
                 }
             }
         }
     }
+
+    // ******************************************************
+    // ACTIVACIÓN DEL MODAL (BOTTOM SHEET) - CONEXIÓN FINAL
+    // ******************************************************
+    selectedProduct?.let { product ->
+        AddToCartBottomSheet(
+            product = product,
+            onDismiss = { selectedProduct = null },
+            // 🎯 CORRECCIÓN CLAVE: La lambda del modal recibe DOS argumentos,
+            // pero solo usamos 'productToAdd' para llamar a la función del VM.
+            onAddToCart = { productToAdd, quantity ->
+
+                // Antes: viewModel.addToCart(selectedProduct, quantity) <--- ESTO ES DEMASIADOS ARGUMENTOS
+
+                // AHORA: Llama a la función del ViewModel que SOLO acepta el Producto
+                viewModel.addToCart(productToAdd) // ✅ ¡Solo un argumento!
+
+                selectedProduct = null // Cierra el modal después de añadir
+            }
+        )
+    }
 }
 
+// ------------------------------------------------------------
+// Se modifica la firma de CategoryRow para recibir la función de click
+// ------------------------------------------------------------
 @Composable
-fun CategoryRow(category: Category) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+fun CategoryRow(category: Category, onProductClick: (Product) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    ) {
         Text(
             text = category.categoria,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
+
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center
         ) {
             items(category.productos) { product ->
-                ProductCard(product)
+                ProductCard(
+                    product = product,
+                    onAddToCartClick = onProductClick, // Se pasa la acción
+                    modifier = Modifier.padding(horizontal = 6.dp)
+                )
             }
         }
     }
 }
 
+// ------------------------------------------------------------
+// Se modifica la firma de ProductCard para usar el callback del click
+// ------------------------------------------------------------
 @Composable
-fun ProductCard(product: Product) {
+fun ProductCard(
+    product: Product,
+    onAddToCartClick: (Product) -> Unit, // Nuevo callback para el click
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .width(170.dp)
             .height(210.dp)
             .padding(vertical = 4.dp),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        border = BorderStroke(1.dp, Color.Black)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.White)
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
@@ -108,18 +171,41 @@ fun ProductCard(product: Product) {
                     contentScale = ContentScale.Fit
                 )
             }
+
             Text(
                 text = product.nombre,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, fontSize = 16.sp),
                 modifier = Modifier.padding(top = 8.dp),
                 maxLines = 2
             )
-            Text(
-                text = "$${"%.2f".format(product.precio)}",
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 2.dp)
-            )
+
+            // Fila de Precio y Botón de Carrito
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Precio (asumo que 'precio' es un Double en tu Product DTO)
+                Text(
+                    text = "$${"%.2f".format(product.precio)}",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.primary,
+                )
+
+                // Botón de Añadir al Carrito
+                Button(
+                    // Llama al callback para mostrar el BottomSheet (a través de onProductClick en HomeViewProducts)
+                    onClick = { onAddToCartClick(product) },
+                    modifier = Modifier.height(30.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = "Añadir al carrito",
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
         }
     }
 }
