@@ -3,7 +3,6 @@ package com.surtiapp.surtimovil.homescreen
 import android.graphics.Bitmap
 import android.util.Log
 import android.widget.Toast
-import androidx.annotation.OptIn
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
@@ -40,16 +39,14 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
-import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
-import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
-import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
 import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
+import com.surtiapp.surtimovil.home.views.HomeViewProducts
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.camera.core.ExperimentalGetImage
 
 /* ======= Bottom navigation setup ======= */
 private data class TabItem(val titleRes: Int, val icon: ImageVector)
@@ -353,6 +350,23 @@ private fun processImageProxy(
     } else {
         imageProxy.close()
     }
+}
+
+/* ======= Pantallas secundarias ======= */
+@Composable
+private fun AyudaScreen() {
+    CenterCard(
+        title = "Centro de Ayuda",
+        body = "Aquí encontrarás respuestas a preguntas frecuentes, información de contacto y soporte para resolver cualquier problema con tu cuenta o pedidos."
+    )
+}
+
+@Composable
+private fun OfertasScreen() {
+    CenterCard(
+        title = "Ofertas y Promociones",
+        body = "Descubre nuestras promociones actuales y descuentos especiales. ¡Aprovecha y haz tu pedido ahora!"
+    )
 }
 
 /* ======= Pestaña de cuenta (login / logout dinámico) ======= */
