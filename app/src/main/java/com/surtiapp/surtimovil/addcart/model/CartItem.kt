@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Addcarrito.model
+package com.surtiapp.surtimovil.addcart.model
 
 /**
  * Clase que representa un producto dentro del carrito de compras.

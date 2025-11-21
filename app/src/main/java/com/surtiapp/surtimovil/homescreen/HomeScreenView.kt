@@ -41,10 +41,9 @@ import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
-import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
+import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.home.views.HomeViewProducts
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.camera.core.ExperimentalGetImage
 
@@ -67,7 +66,7 @@ fun HomeScreenView(
 
     var selectedIndex by rememberSaveable { mutableStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val carritoViewModel: CarritoViewModel = viewModel()
+    val cartViewModel: CartViewModel = viewModel()
 
     // 🌟 Estado de sesión
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
@@ -129,7 +128,7 @@ fun HomeScreenView(
                 0 -> CatalogoScreen(
                     factory = homeViewModelFactory,
                     snackbarHostState = snackbarHostState,
-                    carritoViewModel = carritoViewModel
+                    cartViewModel = cartViewModel
                 )
                 1 -> PedidosScreen()
                 2 -> AyudaScreen()
@@ -153,7 +152,7 @@ fun HomeScreenView(
 private fun CatalogoScreen(
     factory: HomeViewModelFactory,
     snackbarHostState: SnackbarHostState,
-    carritoViewModel: CarritoViewModel
+    cartViewModel: CartViewModel
 ) {
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.ui.collectAsState()
@@ -178,7 +177,7 @@ private fun CatalogoScreen(
     HomeViewProducts(
         uiState = uiState,
         viewModel = viewModel,
-        carritoViewModel = carritoViewModel
+        cartViewModel = cartViewModel
     )
 }
 

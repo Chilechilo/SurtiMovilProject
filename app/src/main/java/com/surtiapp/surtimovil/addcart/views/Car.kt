@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Addcarrito.views
+package com.surtiapp.surtimovil.addcart.views
 // o donde lo tengas, asegúrate de que solo tienes UNA declaración de package
 
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.surtiapp.surtimovil.Addcarrito.model.Producto // Usa el modelo Producto real
+import com.surtiapp.surtimovil.addcart.model.Producto // Usa el modelo Producto real
 
 /**
  * Muestra la información de un producto y el botón para añadirlo al carrito.

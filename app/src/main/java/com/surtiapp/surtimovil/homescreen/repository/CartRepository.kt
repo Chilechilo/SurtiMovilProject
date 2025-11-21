@@ -1,6 +1,6 @@
 package com.surtiapp.surtimovil.homescreen.repository
 
-import com.surtiapp.surtimovil.Addcarrito.model.CartItem
+import com.surtiapp.surtimovil.addcart.model.CartItem
 
 object CartRepository {
     private val cartItems = mutableListOf<CartItem>()

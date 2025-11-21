@@ -1,12 +1,12 @@
-package com.surtiapp.surtimovil.Addcarrito.viewmodel
+package com.surtiapp.surtimovil.addcart.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.surtiapp.surtimovil.Addcarrito.model.Producto
+import com.surtiapp.surtimovil.addcart.model.Producto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 
-class CarritoViewModel : ViewModel() {
+class CartViewModel : ViewModel() {
 
     private val _productosEnCarrito = MutableStateFlow<List<Producto>>(emptyList())
     val productosEnCarrito: StateFlow<List<Producto>> = _productosEnCarrito

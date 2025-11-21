@@ -2,7 +2,7 @@ package com.surtiapp.surtimovil.homescreen.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.surtiapp.surtimovil.Addcarrito.model.CartItem
+import com.surtiapp.surtimovil.addcart.model.CartItem
 import com.surtiapp.surtimovil.core.homescreen.repository.HomeRepository
 import com.surtiapp.surtimovil.homescreen.model.dto.Category
 import com.surtiapp.surtimovil.homescreen.model.dto.Product
