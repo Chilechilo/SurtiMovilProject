@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Signin.viewmodel
+package com.surtiapp.surtimovil.signin.viewmodel
 
 data class SignInUiState(
     val name: String = "",

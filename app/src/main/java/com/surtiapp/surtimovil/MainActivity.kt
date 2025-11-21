@@ -33,7 +33,6 @@ class MainActivity : FragmentActivity() {
 
         val ds = DataStoreManager(this)
 
-        // ✅ Usamos Compose dentro de FragmentActivity
         val composeView = ComposeView(this).apply {
             setContent {
                 SurtiMovilTheme {
@@ -56,8 +55,6 @@ class MainActivity : FragmentActivity() {
                             cartRepository = cartRepository
                         )
                     }
-                    // --- Fin de inicialización ---
-
                     val onboardingDone: Boolean? by ds.onboardingDoneFlow.collectAsState(initial = null)
 
                     when (onboardingDone) {

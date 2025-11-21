@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Signin.views
+package com.surtiapp.surtimovil.signin.views
 
 import android.app.Application
 import androidx.compose.foundation.Image
@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.surtiapp.surtimovil.R
-import com.surtiapp.surtimovil.Signin.viewmodel.SignInViewModel
-import com.surtiapp.surtimovil.Signin.viewmodel.SignInViewModelFactory
+import com.surtiapp.surtimovil.signin.viewmodel.SignInViewModel
+import com.surtiapp.surtimovil.signin.viewmodel.SignInViewModelFactory
 import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
 import com.surtiapp.surtimovil.login.model.repository.AuthRepository
 import kotlinx.coroutines.flow.collectLatest

@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
-import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
+import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeUiState
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.model.dto.Category
@@ -32,10 +32,10 @@ import kotlinx.coroutines.launch
 fun HomeViewProducts(
     uiState: HomeUiState,
     viewModel: HomeViewModel,
-    carritoViewModel: CarritoViewModel,
+    cartViewModel: CartViewModel,
     modifier: Modifier = Modifier
 ) {
-    val productosCarrito by carritoViewModel.productosEnCarrito.collectAsState()
+    val productosCarrito by cartViewModel.productosEnCarrito.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -77,7 +77,7 @@ fun HomeViewProducts(
                                 onAddToCart = { product ->
                                     // Crear objeto del carrito con ID único
                                     val productoCarrito =
-                                        com.surtiapp.surtimovil.Addcarrito.model.Producto(
+                                        com.surtiapp.surtimovil.addcart.model.Producto(
                                             id = "${category.categoria}_${product.id}",
                                             nombre = product.nombre,
                                             descripcion = "",
@@ -85,7 +85,7 @@ fun HomeViewProducts(
                                             imageUrl = product.imagen,
                                             cantidadEnCarrito = 1
                                         )
-                                    carritoViewModel.addCarrito(productoCarrito)
+                                    cartViewModel.addCarrito(productoCarrito)
 
                                     // Mostrar Snackbar de confirmación
                                     scope.launch {
@@ -140,7 +140,7 @@ fun HomeViewProducts(
                                             scope.launch {
                                                 snackbarHostState.showSnackbar("Gracias por tu compra 🛒✨")
                                             }
-                                            carritoViewModel.clearCarrito()
+                                            cartViewModel.clearCarrito()
                                         },
                                         modifier = Modifier.fillMaxWidth()
                                     ) {

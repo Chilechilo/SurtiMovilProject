@@ -5,7 +5,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.surtiapp.surtimovil.Signin.views.SigninView
+import com.surtiapp.surtimovil.signin.views.SigninView
 import com.surtiapp.surtimovil.homescreen.HomeScreenView
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.login.views.LoginView

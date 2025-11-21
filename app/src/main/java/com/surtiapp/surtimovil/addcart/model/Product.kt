@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Addcarrito.model
+package com.surtiapp.surtimovil.addcart.model
 
 // Usamos data class para que Kotlin genere automáticamente métodos como equals() y copy()
 data class Producto(

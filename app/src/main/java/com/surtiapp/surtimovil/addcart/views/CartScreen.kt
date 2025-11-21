@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Addcarrito.views
+package com.surtiapp.surtimovil.addcart.views
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,11 +10,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.surtiapp.surtimovil.Addcarrito.viewmodel.CarritoViewModel
+import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreen(viewModel: CarritoViewModel) {
+fun CartScreen(viewModel: CartViewModel) {
     val productos by viewModel.productosEnCarrito.collectAsState()
 
     Scaffold(

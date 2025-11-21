@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.Signin.viewmodel
+package com.surtiapp.surtimovil.signin.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.ViewModel
