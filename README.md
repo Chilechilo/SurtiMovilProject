@@ -49,7 +49,7 @@ Maximizar la rentabilidad de las pequeñas tiendas y optimizar la cadena de sumi
 ## **Evidencias visuales**
 
 ### Carrito
-![Carrito](app/assets/Imagen_carrito.jpeg)
+![Carrito](app/assets/Cart_image.jpeg)
 
 ### Internacionalización
 ![Inter 1](app/assets/Inter_1.jpeg)
