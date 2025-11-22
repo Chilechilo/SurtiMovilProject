@@ -1,42 +1,62 @@
-Surtimovil
+# **SurtiMovil**
 
-integrantes:
-Luis Angel Hernandez Corrales
-Alejandro Carrasco Maldonado
-Manuel Vito Saenz Montes
+Aplicación móvil enfocada en modernizar el proceso de surtido para tiendas de abarrotes, tienditas, minimarkets y pequeños negocios minoristas.
 
-Responsabilidades:
-Manuel. Agregar el README 
-Alex. Internacionalizacion 
-Luis. Cambio de Help
+---
 
-Descripcion del proyecto surtimovil:
-SurtiMovil es una aplicación móvil diseñada específicamente para el sector de los
-abarrotes ejemplos de estas son: comestibles, limpieza y otros productos de consumo masivo, etc.
-enfocada en el canal tradicional: las "tienditas de la esquina", minimarkets y pequeños negocios 
-minoristas.
+## **Integrantes del equipo**
+- **Luis Ángel Hernández Corrales**
+- **Alejandro Carrasco Maldonado**
+- **Manuel Vito Sáenz Montes**
 
-Nuestro objetivo es modernizar el proceso de surtido, permitiendo a los tenderos acceder a un 
-catálogo digital completo, recibir ofertas personalizadas y realizar pedidos de manera ágil y 
-sencilla desde su dispositivo móvil, garantizando entregas rápidas y eficientes con el fin de 
-optimizarles el tiempo y esfuerzo.
+---
 
-Objetivo principal de la app:
-Maximizar la rentabilidad de las "tienditas" y optimizar la cadena de suministro de los 
-distribuidores, ofreciendo una plataforma que centraliza la gestión de pedidos, la aplicación 
-de ofertas exclusivas y el seguimiento logístico en tiempo real.
+## **Responsabilidades durante el sprint**
+- **Manuel:** Creación del README, Mejora de pestaña "Catalogo"
+- **Alex:** Internacionalización de la aplicación y Mejora de pestaña "Pedidos"
+- **Luis:** Actualización de la sección *Help*, Mejora de pestaña "Mi Cuenta" e Implementacion de Login
 
-Funcionalidades implementadas hasta este sprint 
-Integracion del carrito a surtimovil
-surtimovil esta internacionalizado 
-Cambio de la opcion Help dentro de surtimovil
+---
 
-Capturas o evidencia visual 
-![Imagen carrito.jpeg](assets%2FImagen%20carrito.jpeg)
-![Inter 1.jpeg](assets%2FInter%201.jpeg)
-![Inter 2.jpeg](assets%2FInter%202.jpeg)
-![Inter 3.jpeg](assets%2FInter%203.jpeg)
+## **Descripción del proyecto**
+**SurtiMovil** es una aplicación móvil diseñada para optimizar el proceso de adquisición de productos en el sector abarrotero, incluyendo comestibles, artículos de limpieza y otros productos de consumo masivo.
 
-Evidencia de Ramas del Equipo
-![Ramas equipo.png](assets%2FRamas%20equipo.png)
+La aplicación está enfocada en el canal tradicional:
+- Tienditas de la esquina
+- Minimarkets
+- Pequeños comercios minoristas
 
+El objetivo es permitir que los tenderos accedan a un catálogo digital completo, reciban ofertas personalizadas y realicen pedidos de forma ágil y sencilla desde su dispositivo móvil. Esto garantiza mayor eficiencia en las entregas y un ahorro significativo de tiempo y esfuerzo.
+
+---
+
+## **Objetivo principal de la aplicación**
+Maximizar la rentabilidad de las pequeñas tiendas y optimizar la cadena de suministro de los distribuidores mediante una plataforma que centraliza:
+
+- Gestión de pedidos
+- Aplicación de ofertas exclusivas
+- Seguimiento logístico en tiempo real
+
+---
+
+## **Funcionalidades implementadas en este sprint**
+- Integración del **carrito de compras**
+- Implementación de **internacionalización**
+- Actualización de la sección **Help**
+
+---
+
+## **Evidencias visuales**
+
+### Carrito
+![Imagen carrito.jpeg](assets/Imagen%20carrito.jpeg)
+
+### Internacionalización
+![Inter 1.jpeg](assets/Inter%201.jpeg)
+![Inter 2.jpeg](assets/Inter%202.jpeg)
+![Inter 3.jpeg](assets/Inter%203.jpeg)
+
+---
+
+## **Evidencia de ramas del equipo**
+![Ramas equipo.png](assets/Ramas%20equipo.png)
