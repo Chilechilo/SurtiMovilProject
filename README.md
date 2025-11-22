@@ -52,7 +52,7 @@ Maximizar la rentabilidad de las pequeñas tiendas y optimizar la cadena de sumi
 ![Imagen carrito.jpeg](app/assets/Imagen carrito.jpeg)
 
 ### Internacionalización
-![Inter 1.jpeg](SurtiMovilProject/app/assets/Inter 1.jpeg)
+![Inter 1.jpeg](SurtiMovil_Project/app/assets/Inter 1.jpeg)
 ![Inter 2.jpeg](app/assets/Inter 2.jpeg)
 ![Inter 3.jpeg](app/assets/Inter 3.jpeg)
 
