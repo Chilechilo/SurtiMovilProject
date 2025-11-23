@@ -8,11 +8,17 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,6 +32,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +46,9 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
+import com.surtiapp.surtimovil.core.orders.model.Order
+import com.surtiapp.surtimovil.core.orders.model.OrderStatus
+import com.surtiapp.surtimovil.core.orders.viewmodel.OrdersViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
@@ -46,17 +56,17 @@ import com.surtiapp.surtimovil.home.views.HomeViewProducts
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.camera.core.ExperimentalGetImage
+import java.text.NumberFormat
+import java.util.Locale
 
 /* ======= Bottom navigation setup ======= */
-private data class TabItem(val titleRes: Int, val icon: ImageVector)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenView(
     navController: NavController,
     homeViewModelFactory: HomeViewModelFactory
 ) {
-    var selectedIndex by rememberSaveable { mutableStateOf(0) }
+    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val cartViewModel: CartViewModel = viewModel()
 
@@ -65,7 +75,6 @@ fun HomeScreenView(
 
     var showHelpInsideAccount by rememberSaveable { mutableStateOf(false) }
 
-    // 🔍 ESTE es el único estado del buscador
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     val SEARCH_INDEX = 99
 
@@ -85,7 +94,7 @@ fun HomeScreenView(
         topBar = {
             if (isLoggedIn) {
                 CenterAlignedTopAppBar(
-                    title = { Text("SurtiMóvil") },
+                    title = { Text(stringResource(R.string.app_name)) },
                     actions = {
                         IconButton(onClick = {
                             selectedIndex = 3
@@ -93,7 +102,7 @@ fun HomeScreenView(
                         }) {
                             Icon(
                                 imageVector = Icons.Default.AccountCircle,
-                                contentDescription = "Perfil",
+                                contentDescription = stringResource(R.string.profile_icon_cd),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -109,15 +118,15 @@ fun HomeScreenView(
                     NavigationBarItem(
                         selected = selectedIndex == 0,
                         onClick = { selectedIndex = 0 },
-                        icon = { Icon(Icons.Default.List, "Catálogo") },
-                        label = { Text("Catálogo") }
+                        icon = { Icon(Icons.Default.List, stringResource(R.string.catalog_icon_cd)) },
+                        label = { Text(stringResource(R.string.catalog_tab_label)) }
                     )
 
                     NavigationBarItem(
                         selected = selectedIndex == 1,
                         onClick = { selectedIndex = 1 },
-                        icon = { Icon(Icons.Default.QrCode, "Pedidos") },
-                        label = { Text("Pedidos") }
+                        icon = { Icon(Icons.Default.QrCode, stringResource(R.string.orders_icon_cd)) },
+                        label = { Text(stringResource(R.string.orders_tab_label)) }
                     )
 
                     Spacer(modifier = Modifier.width(56.dp))
@@ -125,8 +134,8 @@ fun HomeScreenView(
                     NavigationBarItem(
                         selected = selectedIndex == 2,
                         onClick = { selectedIndex = 2 },
-                        icon = { Icon(Icons.Default.LocalOffer, "Ofertas") },
-                        label = { Text("Ofertas") }
+                        icon = { Icon(Icons.Default.LocalOffer, stringResource(R.string.offers_icon_cd)) },
+                        label = { Text(stringResource(R.string.offers_tab_label)) }
                     )
 
                     NavigationBarItem(
@@ -135,8 +144,8 @@ fun HomeScreenView(
                             selectedIndex = 3
                             showHelpInsideAccount = false
                         },
-                        icon = { Icon(Icons.Default.Person, "Mi cuenta") },
-                        label = { Text("Mi Cuenta") }
+                        icon = { Icon(Icons.Default.Person, stringResource(R.string.account_icon_cd)) },
+                        label = { Text(stringResource(R.string.account_tab_label)) }
                     )
                 }
 
@@ -155,7 +164,7 @@ fun HomeScreenView(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Buscar",
+                        contentDescription = stringResource(R.string.search_cd),
                         tint = Color.White,
                         modifier = Modifier.size(32.dp)
                     )
@@ -174,7 +183,7 @@ fun HomeScreenView(
             if (selectedIndex == SEARCH_INDEX && showSearchBar) {
                 SearchBar(onClose = {
                     showSearchBar = false
-                    selectedIndex = 0   // regresar al catálogo o donde tú quieras
+                    selectedIndex = 0
                 })
             }
 
@@ -229,70 +238,430 @@ private fun CatalogoScreen(
     HomeViewProducts(uiState, viewModel, cartViewModel)
 }
 
-/* ======= Pedidos (QR Scanner + Generador) ======= */
+/* ======= Pedidos (Lista + QR Scanner + Generador) ======= */
 @Composable
 fun PedidosScreen() {
-    var showQR by rememberSaveable { mutableStateOf(false) }
+    var showQRSection by rememberSaveable { mutableStateOf(false) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showScanner by rememberSaveable { mutableStateOf(false) }
 
-    val viewModel = remember { DeliveryViewModel() }
-    val uiState by viewModel.ui.collectAsState()
+    val deliveryViewModel = remember { DeliveryViewModel() }
+    val deliveryUiState by deliveryViewModel.ui.collectAsState()
+
+    val ordersViewModel: OrdersViewModel = viewModel()
+    val ordersUiState by ordersViewModel.uiState.collectAsState()
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Text("Gestión de pedidos", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+        // Título y botones QR
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            tonalElevation = 2.dp,
+            shadowElevation = 4.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.orders_management_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
 
-        Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(12.dp))
 
-        Button({
-            val orderId = "order_12345"
-            qrBitmap = generateQRCode(orderId)
-            showQR = true
-            showScanner = false
-        }) {
-            Text("Generar QR")
-        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val orderId = "order_12345"
+                            qrBitmap = generateQRCode(orderId)
+                            showQRSection = true
+                            showScanner = false
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.generate_qr_button))
+                    }
 
-        Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            showScanner = true
+                            showQRSection = true
+                            qrBitmap = null
+                        },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(stringResource(R.string.scan_qr_button))
+                    }
+                }
 
-        Button({
-            showScanner = true
-            showQR = false
-        }) {
-            Text("Escanear QR")
-        }
+                // Sección QR (colapsable)
+                AnimatedVisibility(visible = showQRSection) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (!showScanner && qrBitmap != null) {
+                            Card(
+                                modifier = Modifier.size(220.dp),
+                                elevation = CardDefaults.cardElevation(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(12.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Image(
+                                        bitmap = qrBitmap!!.asImageBitmap(),
+                                        contentDescription = null,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
+                            }
+                        }
 
-        Spacer(Modifier.height(24.dp))
+                        if (showScanner) {
+                            RequestCameraPermission()
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(300.dp),
+                                elevation = CardDefaults.cardElevation(8.dp)
+                            ) {
+                                QRScannerView { code ->
+                                    showScanner = false
+                                    showQRSection = false
+                                    deliveryViewModel.confirmDelivery(code)
+                                }
+                            }
+                        }
 
-        if (showQR && qrBitmap != null) {
-            Image(bitmap = qrBitmap!!.asImageBitmap(), contentDescription = null, modifier = Modifier.size(200.dp))
-        }
+                        Spacer(Modifier.height(12.dp))
 
-        if (showScanner) {
-            RequestCameraPermission()
-            QRScannerView { code ->
-                showScanner = false
-                viewModel.confirmDelivery(code)
-            }
-        }
+                        // Estado de entrega
+                        when {
+                            deliveryUiState.loading -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        stringResource(R.string.verifying_delivery),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                            deliveryUiState.success == true -> {
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            deliveryUiState.message ?: "",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
+                                }
+                            }
+                            deliveryUiState.success == false -> {
+                                Card(
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.errorContainer
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Error,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            deliveryUiState.message ?: "",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                    }
+                                }
+                            }
+                        }
 
-        Spacer(Modifier.height(24.dp))
-
-        when {
-            uiState.loading -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(Modifier.height(8.dp))
-                    Text("Verificando entrega…")
+                        if (showQRSection) {
+                            TextButton(onClick = {
+                                showQRSection = false
+                                showScanner = false
+                                qrBitmap = null
+                            }) {
+                                Text(stringResource(R.string.close_icon_cd))
+                            }
+                        }
+                    }
                 }
             }
-            uiState.success == true -> Text("✅ ${uiState.message}", color = MaterialTheme.colorScheme.primary)
-            uiState.success == false -> Text("❌ ${uiState.message}", color = MaterialTheme.colorScheme.error)
         }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Lista de pedidos
+        OrdersList(orders = ordersUiState.orders)
+    }
+}
+
+/* ======= Lista de Pedidos ======= */
+@Composable
+private fun OrdersList(orders: List<Order>) {
+    if (orders.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.no_orders_available),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+        }
+        return
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text(
+                text = stringResource(R.string.my_orders_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+
+        items(orders, key = { it.id }) { order ->
+            OrderCard(order = order)
+        }
+    }
+}
+
+/* ======= Tarjeta de Pedido ======= */
+@Composable
+private fun OrderCard(order: Order) {
+    var expanded by remember { mutableStateOf(false) }
+
+    val containerColor = when (order.status) {
+        OrderStatus.DELIVERED -> Color(0xFFE8F5E9) // Verde claro
+        OrderStatus.PENDING -> Color(0xFFFFF9C4) // Amarillo claro
+        OrderStatus.CANCELLED -> Color(0xFFFFEBEE) // Rojo claro
+    }
+
+    val borderColor = when (order.status) {
+        OrderStatus.DELIVERED -> Color(0xFF4CAF50) // Verde
+        OrderStatus.PENDING -> Color(0xFFFFC107) // Amarillo
+        OrderStatus.CANCELLED -> Color(0xFFF44336) // Rojo
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Encabezado del pedido
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "ID: ${order.id}",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${stringResource(R.string.order_date_label)} ${order.getFormattedDate()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = borderColor
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Total y Estado
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${stringResource(R.string.order_total_label)} ${order.getFormattedTotal()}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = borderColor,
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Text(
+                        text = getStatusText(order.status),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            // Lista de productos (expandible)
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = borderColor.copy(alpha = 0.3f)
+                    )
+
+                    Text(
+                        text = stringResource(R.string.order_products_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    order.products.forEach { product ->
+                        ProductItem(product = product)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+
+            if (!expanded) {
+                Text(
+                    text = stringResource(R.string.tap_to_see_details),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+/* ======= Item de Producto ======= */
+@Composable
+private fun ProductItem(product: com.surtiapp.surtimovil.core.orders.model.OrderProduct) {
+    val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = product.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = stringResource(R.string.product_quantity_format, product.quantity),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = format.format(product.unitPrice),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = format.format(product.subtotal),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+/* ======= Utilidad para traducir estados ======= */
+@Composable
+private fun getStatusText(status: OrderStatus): String {
+    return when (status) {
+        OrderStatus.DELIVERED -> stringResource(R.string.order_status_delivered)
+        OrderStatus.PENDING -> stringResource(R.string.order_status_pending)
+        OrderStatus.CANCELLED -> stringResource(R.string.order_status_cancelled)
     }
 }
 
@@ -316,40 +685,43 @@ fun QRScannerView(onQRCodeScanned: (String) -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
 
-    AndroidView(factory = { ctx ->
-        val previewView = PreviewView(ctx)
-        val executor = ContextCompat.getMainExecutor(ctx)
-        val scanner = BarcodeScanning.getClient()
+    AndroidView(
+        factory = { ctx ->
+            val previewView = PreviewView(ctx)
+            val executor = ContextCompat.getMainExecutor(ctx)
+            val scanner = BarcodeScanning.getClient()
 
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
-
-            val analyzer = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .also {
-                    it.setAnalyzer(executor) { imageProxy ->
-                        processImageProxy(scanner, imageProxy, onQRCodeScanned)
-                    }
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
                 }
 
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer)
-            } catch (e: Exception) {
-                Log.e("CameraX", "Error: ", e)
-            }
-        }, executor)
+                val analyzer = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(executor) { imageProxy ->
+                            processImageProxy(scanner, imageProxy, onQRCodeScanned)
+                        }
+                    }
 
-        previewView
-    })
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer)
+                } catch (e: Exception) {
+                    Log.e("CameraX", "Error: ", e)
+                }
+            }, executor)
+
+            previewView
+        },
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
-@OptIn(ExperimentalGetImage::class)
+@androidx.annotation.OptIn(ExperimentalGetImage::class)
 private fun processImageProxy(
     scanner: com.google.mlkit.vision.barcode.BarcodeScanner,
     imageProxy: ImageProxy,
@@ -373,16 +745,16 @@ private fun processImageProxy(
 @Composable
 private fun AyudaScreen() {
     CenterCard(
-        title = "Centro de Ayuda",
-        body = "Aquí encontrarás respuestas a preguntas frecuentes, información de contacto y soporte para resolver cualquier problema con tu cuenta o pedidos."
+        title = stringResource(R.string.help_center_title),
+        body = stringResource(R.string.help_center_body)
     )
 }
 
 @Composable
 private fun OfertasScreen() {
     CenterCard(
-        title = "Ofertas y Promociones",
-        body = "Descubre nuestras promociones actuales y descuentos especiales. ¡Aprovecha y haz tu pedido ahora!"
+        title = stringResource(R.string.offers_promotions_title),
+        body = stringResource(R.string.offers_promotions_body)
     )
 }
 
@@ -399,12 +771,14 @@ private fun CuentasScreen(
 ) {
     if (showHelp) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Icon(
                 Icons.Default.ArrowBack,
-                contentDescription = "Regresar",
+                contentDescription = stringResource(R.string.back_button_cd),
                 modifier = Modifier
                     .size(32.dp)
                     .clickable { onCloseHelp() }
@@ -418,7 +792,10 @@ private fun CuentasScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp).padding(top = 40.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp)
+            .padding(top = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isLoggedIn) {
@@ -426,11 +803,13 @@ private fun CuentasScreen(
             Icon(
                 imageVector = Icons.Default.AccountCircle,
                 contentDescription = null,
-                modifier = Modifier.size(90.dp).clip(CircleShape)
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(CircleShape)
             )
 
             Text(
-                "Bienvenido, $userName",
+                text = stringResource(R.string.welcome_user, userName),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
             )
@@ -441,7 +820,7 @@ private fun CuentasScreen(
             ) {
                 Icon(Icons.Default.Help, null)
                 Spacer(Modifier.width(8.dp))
-                Text("Centro de Ayuda")
+                Text(stringResource(R.string.help_center_button))
             }
 
             Spacer(Modifier.height(12.dp))
@@ -451,18 +830,23 @@ private fun CuentasScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Cerrar sesión")
+                Text(stringResource(R.string.logout_button))
             }
 
         } else {
             Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text("☹️", style = MaterialTheme.typography.displayLarge)
                 Spacer(Modifier.height(16.dp))
-                Text("No has iniciado sesión", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    stringResource(R.string.not_logged_in_message),
+                    style = MaterialTheme.typography.titleMedium
+                )
                 Spacer(Modifier.height(24.dp))
 
                 var isNavigating by remember { mutableStateOf(false) }
@@ -480,11 +864,13 @@ private fun CuentasScreen(
                     if (isNavigating) {
                         CircularProgressIndicator(
                             strokeWidth = 2.dp,
-                            modifier = Modifier.size(18.dp).padding(end = 8.dp)
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 8.dp)
                         )
-                        Text("Abriendo...")
+                        Text(stringResource(R.string.opening_login))
                     } else {
-                        Text("Iniciar sesión")
+                        Text(stringResource(R.string.login_action))
                     }
                 }
             }
@@ -496,7 +882,9 @@ private fun CuentasScreen(
 @Composable
 private fun CenterCard(title: String, body: String) {
     Box(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         contentAlignment = Alignment.TopCenter
     ) {
         ElevatedCard(Modifier.fillMaxWidth()) {
@@ -517,7 +905,13 @@ fun RequestCameraPermission() {
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        if (!isGranted) Toast.makeText(context, "Se requiere permiso de cámara", Toast.LENGTH_SHORT).show()
+        if (!isGranted) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.camera_permission_required),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     LaunchedEffect(Unit) { launcher.launch(permission) }
@@ -531,21 +925,27 @@ fun SearchBar(onClose: () -> Unit) {
     Surface(
         tonalElevation = 4.dp,
         shadowElevation = 8.dp,
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(12.dp)
         ) {
 
-            Icon(Icons.Default.Search, "Buscar", tint = MaterialTheme.colorScheme.primary)
+            Icon(
+                Icons.Default.Search,
+                stringResource(R.string.search_cd),
+                tint = MaterialTheme.colorScheme.primary
+            )
 
             Spacer(Modifier.width(12.dp))
 
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("Buscar productos…") },
+                placeholder = { Text(stringResource(R.string.search_placeholder)) },
                 modifier = Modifier.weight(1f),
                 singleLine = true
             )
@@ -553,7 +953,7 @@ fun SearchBar(onClose: () -> Unit) {
             Spacer(Modifier.width(8.dp))
 
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, "Cerrar")
+                Icon(Icons.Default.Close, stringResource(R.string.close_icon_cd))
             }
         }
     }
