@@ -64,5 +64,62 @@
     <string name="signup_button_in_login">Dont have an account? Create one</string>
     <string name="already_have_account_go_login">Already have an account? Log in</string>
     <string name="signup_button">Create Account</string>
-</resources>
 
+    <!--Orders Screen - NEW-->
+    <string name="orders_management_title">Orders Management</string>
+    <string name="generate_qr_button">Generate QR</string>
+    <string name="scan_qr_button">Scan QR</string>
+    <string name="verifying_delivery">Verifying delivery…</string>
+    <string name="delivery_confirmed">Delivery confirmed for %1$s</string>
+    <string name="invalid_qr_code">Invalid QR code or unknown order</string>
+    <string name="my_orders_title">My Orders</string>
+    <string name="no_orders_available">No orders available</string>
+    <string name="order_status_delivered">Delivered</string>
+    <string name="order_status_pending">Pending</string>
+    <string name="order_status_cancelled">Cancelled</string>
+    <string name="order_date_label">Date:</string>
+    <string name="order_total_label">Total:</string>
+    <string name="order_status_label">Status:</string>
+    <string name="order_products_title">Products:</string>
+    <string name="product_quantity_format">Qty: %1$d</string>
+    <string name="product_price_format">Price: %1$s</string>
+    <string name="product_subtotal_format">Subtotal: %1$s</string>
+    <string name="tap_to_see_details">Tap to see details</string>
+
+    <!--Account Screen - NEW-->
+    <string name="welcome_user">Welcome, %1$s</string>
+    <string name="help_center_button">Help Center</string>
+    <string name="logout_button">Logout</string>
+    <string name="not_logged_in_message">You are not logged in</string>
+    <string name="login_action">Login</string>
+    <string name="opening_login">Opening…</string>
+    <string name="back_button_cd">Back</string>
+    <string name="profile_icon_cd">Profile</string>
+    <string name="search_icon_cd">Search</string>
+    <string name="close_icon_cd">Close</string>
+
+    <!--Help Screen - NEW-->
+    <string name="help_center_title">Help Center</string>
+    <string name="help_center_body">Here you will find answers to frequently asked questions, contact information, and support to resolve any issues with your account or orders.</string>
+
+    <!--Offers Screen - NEW-->
+    <string name="offers_promotions_title">Offers and Promotions</string>
+    <string name="offers_promotions_body">Discover our current promotions and special discounts. Take advantage and place your order now!</string>
+
+    <!--Search Bar - NEW-->
+    <string name="search_placeholder">Search products…</string>
+    <string name="search_cd">Search</string>
+
+    <!--Camera Permission - NEW-->
+    <string name="camera_permission_required">Camera permission required</string>
+
+    <!--Navigation - NEW-->
+    <string name="catalog_tab_label">Catalog</string>
+    <string name="orders_tab_label">Orders</string>
+    <string name="offers_tab_label">Offers</string>
+    <string name="account_tab_label">My Account</string>
+    <string name="catalog_icon_cd">Catalog</string>
+    <string name="orders_icon_cd">Orders</string>
+    <string name="offers_icon_cd">Offers</string>
+    <string name="account_icon_cd">My account</string>
+</resources>
