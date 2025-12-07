@@ -1,12 +1,14 @@
 package com.surtiapp.surtimovil.core.orders.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.surtiapp.surtimovil.addcart.model.Producto
 import com.surtiapp.surtimovil.core.orders.model.Order
 import com.surtiapp.surtimovil.core.orders.model.OrderProduct
 import com.surtiapp.surtimovil.core.orders.model.OrderStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Calendar
+import java.util.UUID
 
 data class OrdersUiState(
     val orders: List<Order> = emptyList(),
@@ -21,6 +23,42 @@ class OrdersViewModel : ViewModel() {
 
     init {
         loadMockOrders()
+    }
+
+    /**
+     * Crea un pedido a partir de los productos del carrito
+     */
+    fun createOrderFromCart(productosCarrito: List<Producto>) {
+        if (productosCarrito.isEmpty()) return
+
+        // Convertir productos del carrito a OrderProduct
+        val orderProducts = productosCarrito.map { producto ->
+            OrderProduct(
+                id = producto.id,
+                name = producto.nombre,
+                quantity = producto.cantidadEnCarrito,
+                unitPrice = producto.precio
+            )
+        }
+
+        // Calcular el total
+        val total = productosCarrito.sumOf { it.precio * it.cantidadEnCarrito }
+
+        // Crear la nueva orden
+        val newOrder = Order(
+            id = "order_${UUID.randomUUID().toString().take(8)}",
+            date = System.currentTimeMillis(),
+            total = total,
+            status = OrderStatus.PENDING,
+            products = orderProducts
+        )
+
+        // Agregar la orden a la lista existente
+        val currentOrders = _uiState.value.orders.toMutableList()
+        currentOrders.add(0, newOrder) // Agregar al inicio de la lista
+
+        // Actualizar el estado
+        _uiState.value = _uiState.value.copy(orders = currentOrders)
     }
 
     /**

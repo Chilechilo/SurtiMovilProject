@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -30,7 +29,7 @@ fun ProductDetailModal(
     onDismiss: () -> Unit,
     onAddToCart: (ProductDto, Int) -> Unit
 ) {
-    var quantity by remember { mutableStateOf(1) }
+    var quantity by remember { mutableIntStateOf(1) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -90,7 +89,6 @@ fun ProductDetailModal(
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp)
                 ) {
-                    // Nombre del producto
                     Text(
                         text = product.name,
                         style = MaterialTheme.typography.headlineSmall,
@@ -100,7 +98,6 @@ fun ProductDetailModal(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // Precio
                     Text(
                         text = formatPrice(product.price),
                         style = MaterialTheme.typography.headlineMedium,
@@ -110,7 +107,6 @@ fun ProductDetailModal(
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Selector de cantidad
                     Text(
                         text = "Cantidad",
                         style = MaterialTheme.typography.titleMedium,
@@ -125,7 +121,6 @@ fun ProductDetailModal(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Botón decrementar
                         FilledIconButton(
                             onClick = { if (quantity > 1) quantity-- },
                             modifier = Modifier.size(56.dp),
@@ -137,7 +132,7 @@ fun ProductDetailModal(
                         ) {
                             Icon(
                                 Icons.Default.Remove,
-                                contentDescription = "Disminuir cantidad",
+                                contentDescription = "Disminuir",
                                 tint = if (quantity > 1)
                                     MaterialTheme.colorScheme.onPrimaryContainer
                                 else
@@ -145,7 +140,6 @@ fun ProductDetailModal(
                             )
                         }
 
-                        // Cantidad
                         Surface(
                             modifier = Modifier
                                 .padding(horizontal = 24.dp)
@@ -166,7 +160,6 @@ fun ProductDetailModal(
                             }
                         }
 
-                        // Botón incrementar
                         FilledIconButton(
                             onClick = { quantity++ },
                             modifier = Modifier.size(56.dp),
@@ -176,7 +169,7 @@ fun ProductDetailModal(
                         ) {
                             Icon(
                                 Icons.Default.Add,
-                                contentDescription = "Aumentar cantidad",
+                                contentDescription = "Aumentar",
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
@@ -184,7 +177,6 @@ fun ProductDetailModal(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Subtotal
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -216,14 +208,12 @@ fun ProductDetailModal(
 
                 Spacer(Modifier.weight(1f))
 
-                // Botones de acción
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Botón Cancelar
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier
@@ -238,7 +228,6 @@ fun ProductDetailModal(
                         )
                     }
 
-                    // Botón Agregar al carrito
                     Button(
                         onClick = {
                             onAddToCart(product, quantity)

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
 import com.surtiapp.surtimovil.addcart.model.Producto
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeUiState
@@ -41,6 +42,48 @@ fun HomeViewProducts(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // Estado para el modal de producto
+    var selectedProduct by remember { mutableStateOf<Pair<ProductDto, String>?>(null) }
+
+    // Función para agregar al carrito con cantidad
+    val addToCartWithQuantity: (ProductDto, String, Int) -> Unit = { product, categoryName, quantity ->
+        repeat(quantity) {
+            val cartProduct = Producto(
+                id = "${categoryName}_${product.id}",
+                nombre = product.name,
+                descripcion = "",
+                precio = product.price,
+                imageUrl = product.image,
+                cantidadEnCarrito = 1
+            )
+            cartViewModel.addCarrito(cartProduct)
+        }
+
+        scope.launch {
+            val mensaje = if (quantity == 1) {
+                "Añadido: ${product.name}"
+            } else {
+                "Añadidas $quantity unidades de ${product.name}"
+            }
+            snackbarHostState.showSnackbar(
+                message = mensaje,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Mostrar modal si hay un producto seleccionado
+    selectedProduct?.let { (product, categoryName) ->
+        ProductDetailModal(
+            product = product,
+            onDismiss = { selectedProduct = null },
+            onAddToCart = { prod, qty ->
+                addToCartWithQuantity(prod, categoryName, qty)
+                selectedProduct = null
+            }
+        )
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -67,7 +110,6 @@ fun HomeViewProducts(
                 }
 
                 uiState.productos.isEmpty() -> {
-                    // Estado vacío cuando no hay productos
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
                         Text(
                             text = "No products available",
@@ -83,9 +125,8 @@ fun HomeViewProducts(
                             .background(Color.White),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
-                        // Recorremos las categorías en el orden que vengan
+                        // Recorremos las categorías
                         items(uiState.categorias) { category ->
-                            // Productos que pertenecen a esta categoría
                             val categoryProducts = uiState.productos.filter {
                                 it.category == category.category
                             }
@@ -95,23 +136,8 @@ fun HomeViewProducts(
                                     category = category,
                                     products = categoryProducts,
                                     onAddToCart = { product ->
-                                        // Mapear ProductDto -> Producto (modelo del carrito)
-                                        val cartProduct = Producto(
-                                            id = "${category.category}_${product.id}",
-                                            nombre = product.name,
-                                            descripcion = "",
-                                            precio = product.price,
-                                            imageUrl = product.image,
-                                            cantidadEnCarrito = 1
-                                        )
-                                        cartViewModel.addCarrito(cartProduct)
-
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(
-                                                message = "Añadido: ${product.name}",
-                                                duration = SnackbarDuration.Short
-                                            )
-                                        }
+                                        // Abrir modal en lugar de agregar directamente
+                                        selectedProduct = product to category.category
                                     }
                                 )
                             }
@@ -163,7 +189,7 @@ private fun ProductCard(
     Card(
         modifier = Modifier
             .width(170.dp)
-            .heightIn(min = 210.dp)
+            .height(240.dp)  // Aumentado para dar más espacio
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(6.dp),
@@ -176,6 +202,7 @@ private fun ProductCard(
                 .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Imagen del producto
             Image(
                 painter = rememberAsyncImagePainter(product.image),
                 contentDescription = product.name,
@@ -185,31 +212,41 @@ private fun ProductCard(
                 contentScale = ContentScale.Fit
             )
 
+            Spacer(Modifier.height(8.dp))
+
+            // Nombre del producto con altura fija y overflow
             Text(
                 text = product.name,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)  // Altura fija para 2 líneas
             )
 
-            Spacer(modifier = Modifier.weight(1f))
+            // Spacer flexible para empujar precio y botón al fondo
+            Spacer(Modifier.weight(1f))
 
+            // Precio y botón siempre visibles al final
             Row(
                 Modifier
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = formatPrice(product.price),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
 
                 Button(
                     onClick = { onAddToCartClick(product) },
-                    modifier = Modifier.height(30.dp),
+                    modifier = Modifier.height(32.dp),
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     Icon(

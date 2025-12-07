@@ -84,6 +84,7 @@ fun HomeScreenView(
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val cartViewModel: CartViewModel = viewModel()
+    val ordersViewModel: OrdersViewModel = viewModel()
 
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
 
@@ -210,7 +211,8 @@ fun HomeScreenView(
             if (showCart) {
                 CartScreen(
                     viewModel = cartViewModel,
-                    onBack = { showCart = false }    // 👈 cerramos el carrito
+                    ordersViewModel = ordersViewModel,
+                    onBack = { showCart = false }
                 )
             } else {
 
