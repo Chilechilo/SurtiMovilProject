@@ -2,7 +2,6 @@ package com.surtiapp.surtimovil.addcart.model
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -14,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,17 +20,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
 fun ProductDetailModal(
-    product: Product,
+    product: ProductDto,
     onDismiss: () -> Unit,
-    onAddToCart: (Product, Int) -> Unit
+    onAddToCart: (ProductDto, Int) -> Unit
 ) {
-    var quantity by remember { mutableIntStateOf(1) }
+    var quantity by remember { mutableStateOf(1) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -74,8 +72,8 @@ fun ProductDetailModal(
 
                 // Imagen del producto
                 AsyncImage(
-                    model = product.imagen,
-                    contentDescription = product.nombre,
+                    model = product.image,
+                    contentDescription = product.name,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(300.dp)
@@ -94,7 +92,7 @@ fun ProductDetailModal(
                 ) {
                     // Nombre del producto
                     Text(
-                        text = product.nombre,
+                        text = product.name,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -104,7 +102,7 @@ fun ProductDetailModal(
 
                     // Precio
                     Text(
-                        text = formatPrice(product.precio),
+                        text = formatPrice(product.price),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -207,7 +205,7 @@ fun ProductDetailModal(
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                             Text(
-                                text = formatPrice(product.precio * quantity),
+                                text = formatPrice(product.price * quantity),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer

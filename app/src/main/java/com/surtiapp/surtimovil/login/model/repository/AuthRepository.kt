@@ -33,7 +33,6 @@ class AuthRepository(
         }
     }
 
-    // 👇 AHORA SÍ IMPLEMENTADO
     suspend fun signUp(name: String, email: String, password: String): Result<Unit> {
         return try {
             val req = SignUpRequest(
