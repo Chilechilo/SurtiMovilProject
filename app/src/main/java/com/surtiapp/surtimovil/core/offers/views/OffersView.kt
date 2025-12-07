@@ -1,6 +1,5 @@
 package com.surtiapp.surtimovil.core.offers.views
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,17 +27,71 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
+import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
+import com.surtiapp.surtimovil.addcart.model.Producto
+import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.ProductWithCategory
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun OffersView(viewModel: OffersViewModel) {
+fun OffersView(
+    viewModel: OffersViewModel,
+    cartViewModel: CartViewModel,
+    snackbarHostState: SnackbarHostState
+) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Estado para el modal de producto
+    var selectedProductWithCategory by remember { mutableStateOf<ProductWithCategory?>(null) }
+
+    // Función para agregar al carrito con cantidad
+    val addToCartWithQuantity: (ProductWithCategory, Int) -> Unit =
+        { productWithCategory, quantity ->
+            repeat(quantity) {
+                val p = productWithCategory.product
+                val productoParaCarrito = Producto(
+                    id = "${productWithCategory.category}_${p.id}",
+                    nombre = p.name,
+                    descripcion = "",
+                    precio = p.price,
+                    imageUrl = p.image,
+                    cantidadEnCarrito = 1
+                )
+                cartViewModel.addCarrito(productoParaCarrito)
+            }
+
+            // Mostrar snackbar
+            coroutineScope.launch {
+                val p = productWithCategory.product
+                val mensaje = if (quantity == 1) {
+                    "¡${p.name} agregado con éxito!"
+                } else {
+                    "¡$quantity unidades de ${p.name} agregadas!"
+                }
+                snackbarHostState.showSnackbar(
+                    message = mensaje,
+                    duration = SnackbarDuration.Short
+                )
+            }
+        }
+
+    // Mostrar modal si hay un producto seleccionado
+    selectedProductWithCategory?.let { productWithCategory ->
+        ProductDetailModal(
+            product = productWithCategory.product,
+            onDismiss = { selectedProductWithCategory = null },
+            onAddToCart = { _, qty ->
+                addToCartWithQuantity(productWithCategory, qty)
+                selectedProductWithCategory = null
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -68,9 +121,11 @@ fun OffersView(viewModel: OffersViewModel) {
                 error = uiState.error ?: "Error desconocido",
                 onRetry = { viewModel.fetchOffers() }
             )
+
             uiState.filteredProducts.isEmpty() -> EmptyState(
                 hasSearch = uiState.searchQuery.isNotEmpty() || uiState.selectedCategory != "Todas"
             )
+
             else -> {
                 // Carousel de ofertas
                 val pagerState = rememberPagerState()
@@ -96,6 +151,7 @@ fun OffersView(viewModel: OffersViewModel) {
                     ) { page ->
                         OfferCard(
                             productWithCategory = uiState.filteredProducts[page],
+                            onAddToCart = { selectedProductWithCategory = it },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp)
@@ -208,6 +264,7 @@ private fun CategoryFilters(
 @Composable
 private fun OfferCard(
     productWithCategory: ProductWithCategory,
+    onAddToCart: (ProductWithCategory) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val product = productWithCategory.product
@@ -341,7 +398,7 @@ private fun OfferCard(
 
                     // Botón de acción
                     Button(
-                        onClick = { /* TODO: Agregar al carrito */ },
+                        onClick = { onAddToCart(productWithCategory) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {

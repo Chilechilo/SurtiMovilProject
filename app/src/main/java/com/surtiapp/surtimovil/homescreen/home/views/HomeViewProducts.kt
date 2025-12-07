@@ -1,6 +1,7 @@
 package com.surtiapp.surtimovil.homescreen.home.views
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,7 +30,6 @@ import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
-import androidx.compose.foundation.Image
 
 @Composable
 fun HomeViewProducts(
@@ -41,7 +41,9 @@ fun HomeViewProducts(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
         Box(
             modifier = modifier
                 .fillMaxSize()

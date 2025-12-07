@@ -19,6 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -52,11 +54,11 @@ import com.google.zxing.qrcode.QRCodeWriter
 import com.surtiapp.surtimovil.R
 import com.surtiapp.surtimovil.addcart.model.Producto
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
+import com.surtiapp.surtimovil.addcart.views.CartScreen
 import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
 import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModelFactory
-import com.surtiapp.surtimovil.core.offers.views.OffersView
 import com.surtiapp.surtimovil.core.orders.model.Order
 import com.surtiapp.surtimovil.core.orders.model.OrderStatus
 import com.surtiapp.surtimovil.core.orders.viewmodel.OrdersViewModel
@@ -69,9 +71,6 @@ import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.camera.core.ExperimentalGetImage
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import com.surtiapp.surtimovil.addcart.views.CartScreen
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -411,6 +410,7 @@ fun PedidosScreen() {
                                     )
                                 }
                             }
+
                             deliveryUiState.success == true -> {
                                 Card(
                                     colors = CardDefaults.cardColors(
@@ -435,6 +435,7 @@ fun PedidosScreen() {
                                     }
                                 }
                             }
+
                             deliveryUiState.success == false -> {
                                 Card(
                                     colors = CardDefaults.cardColors(
@@ -806,7 +807,22 @@ private fun OfertasScreen() {
     val offersRepository = OffersRepository(homeApi)
     val viewModelFactory = OffersViewModelFactory(offersRepository)
     val viewModel: OffersViewModel = viewModel(factory = viewModelFactory)
-    OffersView(viewModel = viewModel)
+
+    // Cart y snackbar scoped al mismo NavBackStackEntry (mismo ViewModel que arriba)
+    val cartViewModel: CartViewModel = viewModel()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            com.surtiapp.surtimovil.core.offers.views.OffersView(
+                viewModel = viewModel,
+                cartViewModel = cartViewModel,
+                snackbarHostState = snackbarHostState
+            )
+        }
+    }
 }
 
 /* ======= Cuenta ======= */
@@ -981,7 +997,7 @@ fun SearchBar(
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
 
-// Filtrar productos basados en la búsqueda
+    // Filtrar productos basados en la búsqueda
     val searchResults: List<ProductDto> = remember(query, uiState.productos) {
         if (query.isEmpty()) {
             emptyList()
@@ -1078,6 +1094,7 @@ fun SearchBar(
                     }
                 }
             }
+
             searchResults.isEmpty() -> {
                 // No se encontraron resultados
                 Box(
@@ -1110,6 +1127,7 @@ fun SearchBar(
                     }
                 }
             }
+
             else -> {
                 // Mostrar resultados
                 LazyColumn(
