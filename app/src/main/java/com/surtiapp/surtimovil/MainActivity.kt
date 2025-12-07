@@ -80,7 +80,7 @@ class MainActivity : FragmentActivity() {
     // --- Retrofit Instance ---
     private fun getRetrofitInstance(): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://gist.githubusercontent.com/Manuel2210337/") // Tu endpoint base
+            .baseUrl("https://surtimovil-backend.onrender.com/api/") // Tu endpoint base
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

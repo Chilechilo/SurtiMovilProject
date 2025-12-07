@@ -18,14 +18,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddToCartBottomSheet(
-    product: Product,
+    product: ProductDto,
     onDismiss: () -> Unit,
-    onAddToCart: (Product, Int) -> Unit
+    onAddToCart: (ProductDto, Int) -> Unit
 ) {
     // State to hold the selected quantity
     var quantity by remember { mutableIntStateOf(1) }
@@ -83,7 +83,7 @@ fun AddToCartBottomSheet(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Total Price Calculation
-            val subtotal = product.precio * quantity
+            val subtotal = product.price * quantity
             Text(
                 text = "Subtotal: $${"%.2f".format(subtotal)}",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
@@ -107,15 +107,15 @@ fun AddToCartBottomSheet(
 }
 
 @Composable
-fun ProductDetailsRow(product: Product) {
+fun ProductDetailsRow(product: ProductDto) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Product Image
         Image(
-            painter = rememberAsyncImagePainter(product.imagen),
-            contentDescription = product.nombre,
+            painter = rememberAsyncImagePainter(product.image),
+            contentDescription = product.name,
             modifier = Modifier
                 .size(80.dp)
                 .clip(RoundedCornerShape(8.dp))
@@ -125,13 +125,13 @@ fun ProductDetailsRow(product: Product) {
         Column(modifier = Modifier.weight(1f)) {
             // Product Name
             Text(
-                text = product.nombre,
+                text = product.name,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 2
             )
             // Product Price
             Text(
-                text = "$${"%.2f".format(product.precio)} c/u",
+                text = "$${"%.2f".format(product.price)} c/u",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.secondary
             )

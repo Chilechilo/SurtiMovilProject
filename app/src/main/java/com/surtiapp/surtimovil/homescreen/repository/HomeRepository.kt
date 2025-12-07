@@ -1,32 +1,51 @@
 package com.surtiapp.surtimovil.core.homescreen.repository
 
 import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
-import com.surtiapp.surtimovil.homescreen.model.dto.HomeResponse
-import java.io.IOException
+import com.surtiapp.surtimovil.homescreen.model.dto.CategoryDto
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
+import retrofit2.Response
 
 class HomeRepository(private val api: HomeApi) {
-    // La lógica de la URL y manejo de errores es correcta, solo se ajusta el package
-    suspend fun getHome(): Result<HomeResponse> {
-        return try {
-            val url = "https://gist.githubusercontent.com/c8b664fc2a7c89474ea5a9393c0e53a4/raw/8d445be823e3e2265a82291347604cb0d5a02691/gistfile1.json"
-            println("[DEBUG] HomeRepository: URL de petición: $url")
-            val resp = api.getHome()
-            if (resp.isSuccessful) {
-                val body = resp.body()
-                if (body != null) {
-                    Result.success(body)
-                } else {
-                    Result.failure(Exception("Respuesta vacía del servidor (HTTP ${resp.code()})"))
-                }
-            } else {
-                val msg = resp.errorBody()?.string().orEmpty()
-                val errorMsg = "HTTP ${resp.code()} - ${resp.message()}\n$msg"
-                Result.failure(Exception(errorMsg.ifBlank { "Error al obtener datos de Home" }))
-            }
-        } catch (e: IOException) {
-            Result.failure(Exception("Sin conexión. Verifica tu red. (${e.localizedMessage})"))
-        } catch (e: Exception) {
-            Result.failure(Exception("Error inesperado: ${e.localizedMessage}"))
+
+    suspend fun getCategories(): Result<List<CategoryDto>> = try {
+        val resp: Response<com.surtiapp.surtimovil.homescreen.model.dto.CategoryResponse> =
+            api.getCategories()
+        val body = resp.body()
+
+        if (resp.isSuccessful && body != null && body.success) {
+            Result.success(body.categories)
+        } else {
+            Result.failure(Exception("Error al obtener categorías"))
         }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    suspend fun getAllProducts(): Result<List<ProductDto>> = try {
+        val resp: Response<com.surtiapp.surtimovil.homescreen.model.dto.ProductResponse> =
+            api.getAllProducts()
+        val body = resp.body()
+
+        if (resp.isSuccessful && body != null && body.success) {
+            Result.success(body.products)
+        } else {
+            Result.failure(Exception("Error al obtener productos"))
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    suspend fun getProductsByCategory(category: String): Result<List<ProductDto>> = try {
+        val resp: Response<com.surtiapp.surtimovil.homescreen.model.dto.ProductResponse> =
+            api.getProductsByCategory(category)
+        val body = resp.body()
+
+        if (resp.isSuccessful && body != null && body.success) {
+            Result.success(body.products)
+        } else {
+            Result.failure(Exception("Error al obtener productos por categoría"))
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
     }
 }

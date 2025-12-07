@@ -1,6 +1,5 @@
 package com.surtiapp.surtimovil.core.offers.views
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -28,14 +27,11 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
 import com.surtiapp.surtimovil.addcart.model.Producto
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.ProductWithCategory
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarDuration
-import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -55,32 +51,35 @@ fun OffersView(
     var selectedProductWithCategory by remember { mutableStateOf<ProductWithCategory?>(null) }
 
     // Función para agregar al carrito con cantidad
-    val addToCartWithQuantity: (ProductWithCategory, Int) -> Unit = { productWithCategory, quantity ->
-        repeat(quantity) {
-            val productoParaCarrito = Producto(
-                id = "${productWithCategory.category}_${productWithCategory.product.id}",
-                nombre = productWithCategory.product.nombre,
-                descripcion = "",
-                precio = productWithCategory.product.precio,
-                imageUrl = productWithCategory.product.imagen,
-                cantidadEnCarrito = 1
-            )
-            cartViewModel.addCarrito(productoParaCarrito)
-        }
-
-        // Mostrar snackbar
-        coroutineScope.launch {
-            val mensaje = if (quantity == 1) {
-                "¡${productWithCategory.product.nombre} agregado con éxito!"
-            } else {
-                "¡$quantity unidades de ${productWithCategory.product.nombre} agregadas!"
+    val addToCartWithQuantity: (ProductWithCategory, Int) -> Unit =
+        { productWithCategory, quantity ->
+            repeat(quantity) {
+                val p = productWithCategory.product
+                val productoParaCarrito = Producto(
+                    id = "${productWithCategory.category}_${p.id}",
+                    nombre = p.name,
+                    descripcion = "",
+                    precio = p.price,
+                    imageUrl = p.image,
+                    cantidadEnCarrito = 1
+                )
+                cartViewModel.addCarrito(productoParaCarrito)
             }
-            snackbarHostState.showSnackbar(
-                message = mensaje,
-                duration = SnackbarDuration.Short
-            )
+
+            // Mostrar snackbar
+            coroutineScope.launch {
+                val p = productWithCategory.product
+                val mensaje = if (quantity == 1) {
+                    "¡${p.name} agregado con éxito!"
+                } else {
+                    "¡$quantity unidades de ${p.name} agregadas!"
+                }
+                snackbarHostState.showSnackbar(
+                    message = mensaje,
+                    duration = SnackbarDuration.Short
+                )
+            }
         }
-    }
 
     // Mostrar modal si hay un producto seleccionado
     selectedProductWithCategory?.let { productWithCategory ->
@@ -122,9 +121,11 @@ fun OffersView(
                 error = uiState.error ?: "Error desconocido",
                 onRetry = { viewModel.fetchOffers() }
             )
+
             uiState.filteredProducts.isEmpty() -> EmptyState(
                 hasSearch = uiState.searchQuery.isNotEmpty() || uiState.selectedCategory != "Todas"
             )
+
             else -> {
                 // Carousel de ofertas
                 val pagerState = rememberPagerState()
@@ -283,8 +284,8 @@ private fun OfferCard(
                         .weight(1f)
                 ) {
                     AsyncImage(
-                        model = product.imagen,
-                        contentDescription = product.nombre,
+                        model = product.image,
+                        contentDescription = product.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -357,7 +358,7 @@ private fun OfferCard(
 
                     // Nombre
                     Text(
-                        text = product.nombre,
+                        text = product.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
@@ -373,7 +374,7 @@ private fun OfferCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = formatPrice(product.precio),
+                            text = formatPrice(product.price),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -397,10 +398,7 @@ private fun OfferCard(
 
                     // Botón de acción
                     Button(
-                        onClick = {
-                            // Abrir modal
-                            onAddToCart(productWithCategory)
-                        },
+                        onClick = { onAddToCart(productWithCategory) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
