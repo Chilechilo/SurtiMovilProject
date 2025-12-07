@@ -86,6 +86,7 @@ fun HomeScreenView(
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val cartViewModel: CartViewModel = viewModel()
+    val ordersViewModel: OrdersViewModel = viewModel()
 
     val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
 
@@ -212,7 +213,7 @@ fun HomeScreenView(
             }
 
             when (selectedIndex) {
-                0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel)
+                0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel, ordersViewModel)
                 1 -> PedidosScreen()
                 2 -> OfertasScreen()
                 3 -> CuentasScreen(
@@ -237,7 +238,8 @@ fun HomeScreenView(
 private fun CatalogoScreen(
     factory: HomeViewModelFactory,
     snackbarHostState: SnackbarHostState,
-    cartViewModel: CartViewModel
+    cartViewModel: CartViewModel,
+    ordersViewModel: OrdersViewModel
 ) {
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.ui.collectAsState()
@@ -259,7 +261,7 @@ private fun CatalogoScreen(
         }
     }
 
-    HomeViewProducts(uiState, viewModel, cartViewModel)
+    HomeViewProducts(uiState, viewModel, cartViewModel, ordersViewModel)
 }
 
 /* ======= Pedidos (Lista + QR Scanner + Generador) ======= */

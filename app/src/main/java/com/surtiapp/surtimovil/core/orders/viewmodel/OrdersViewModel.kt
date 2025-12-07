@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import com.surtiapp.surtimovil.core.orders.model.Order
 import com.surtiapp.surtimovil.core.orders.model.OrderProduct
 import com.surtiapp.surtimovil.core.orders.model.OrderStatus
+import com.surtiapp.surtimovil.addcart.model.Producto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.util.Calendar
+import java.util.UUID
 
 data class OrdersUiState(
     val orders: List<Order> = emptyList(),
@@ -21,6 +24,59 @@ class OrdersViewModel : ViewModel() {
 
     init {
         loadMockOrders()
+    }
+
+    /**
+     * Crea un pedido a partir de los productos del carrito
+     */
+    fun createOrderFromCart(productosCarrito: List<Producto>) {
+        if (productosCarrito.isEmpty()) return
+
+        // Convertir productos del carrito a productos de pedido
+        val orderProducts = productosCarrito.map { producto ->
+            OrderProduct(
+                id = producto.id,
+                name = producto.nombre,
+                quantity = producto.cantidadEnCarrito,
+                unitPrice = producto.precio
+            )
+        }
+
+        // Calcular el total
+        val total = orderProducts.sumOf { it.subtotal }
+
+        // Crear el nuevo pedido con estado PENDING
+        val newOrder = Order(
+            id = "order_${UUID.randomUUID().toString().take(8)}",
+            date = System.currentTimeMillis(),
+            total = total,
+            status = OrderStatus.PENDING,
+            products = orderProducts
+        )
+
+        // Agregar el nuevo pedido al inicio de la lista
+        _uiState.update { currentState ->
+            currentState.copy(
+                orders = listOf(newOrder) + currentState.orders
+            )
+        }
+    }
+
+    /**
+     * Actualiza el estado de un pedido
+     */
+    fun updateOrderStatus(orderId: String, newStatus: OrderStatus) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                orders = currentState.orders.map { order ->
+                    if (order.id == orderId) {
+                        order.copy(status = newStatus)
+                    } else {
+                        order
+                    }
+                }
+            )
+        }
     }
 
     /**

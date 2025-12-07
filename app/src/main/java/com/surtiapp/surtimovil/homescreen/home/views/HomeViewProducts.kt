@@ -25,6 +25,7 @@ import com.surtiapp.surtimovil.homescreen.home.HomeUiState
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.model.dto.Category
 import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.core.orders.viewmodel.OrdersViewModel
 import androidx.compose.foundation.BorderStroke
 import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
 import kotlinx.coroutines.launch
@@ -34,6 +35,7 @@ fun HomeViewProducts(
     uiState: HomeUiState,
     viewModel: HomeViewModel,
     cartViewModel: CartViewModel,
+    ordersViewModel: OrdersViewModel,  // ← NUEVO: Recibe OrdersViewModel
     modifier: Modifier = Modifier
 ) {
     val productosCarrito by cartViewModel.productosEnCarrito.collectAsState()
@@ -158,15 +160,23 @@ fun HomeViewProducts(
 
                                 Column(Modifier.padding(16.dp)) {
                                     Text(
-                                        text = "Total: $${"%.2f".format(total)}",
+                                        text = "Total: ${"%.2f".format(total)}",
                                         style = MaterialTheme.typography.bodyLarge
                                     )
                                     Spacer(Modifier.height(12.dp))
                                     Button(
                                         onClick = {
+                                            // Crear pedido a partir del carrito
+                                            ordersViewModel.createOrderFromCart(productosCarrito)
+
                                             scope.launch {
-                                                snackbarHostState.showSnackbar("Gracias por tu compra 🛒✨")
+                                                snackbarHostState.showSnackbar(
+                                                    "¡Pedido realizado con éxito! 🛒✨",
+                                                    duration = SnackbarDuration.Short
+                                                )
                                             }
+
+                                            // Limpiar el carrito
                                             cartViewModel.clearCarrito()
                                         },
                                         modifier = Modifier.fillMaxWidth()
