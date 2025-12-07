@@ -71,6 +71,7 @@ import kotlinx.coroutines.launch
 import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import com.surtiapp.surtimovil.addcart.views.CartScreen
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -91,6 +92,7 @@ fun HomeScreenView(
     var userName by rememberSaveable { mutableStateOf("Usuario") }
 
     var showHelpInsideAccount by rememberSaveable { mutableStateOf(false) }
+    var showCart by rememberSaveable { mutableStateOf(false) }
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     val SEARCH_INDEX = 99
@@ -113,6 +115,14 @@ fun HomeScreenView(
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(R.string.app_name)) },
                     actions = {
+
+                        IconButton(onClick = { showCart = true }) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = "Ver carrito",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                         IconButton(onClick = {
                             selectedIndex = 3
                             showHelpInsideAccount = false
@@ -197,34 +207,43 @@ fun HomeScreenView(
                 .background(MaterialTheme.colorScheme.background)
         ) {
 
-            if (selectedIndex == SEARCH_INDEX && showSearchBar) {
-                SearchBar(
-                    homeViewModel = homeViewModel,
-                    cartViewModel = cartViewModel,
-                    snackbarHostState = snackbarHostState,
-                    onClose = {
-                        showSearchBar = false
-                        selectedIndex = 0
-                    }
+            // Si está abierto el carrito, mostramos SOLO el carrito
+            if (showCart) {
+                CartScreen(
+                    viewModel = cartViewModel,
+                    onBack = { showCart = false }    // 👈 cerramos el carrito
                 )
-            }
+            } else {
 
-            when (selectedIndex) {
-                0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel)
-                1 -> PedidosScreen()
-                2 -> OfertasScreen()
-                3 -> CuentasScreen(
-                    navController,
-                    isLoggedIn,
-                    userName,
-                    onLogout = {
-                        isLoggedIn = false
-                        userName = ""
-                    },
-                    showHelp = showHelpInsideAccount,
-                    onHelpClick = { showHelpInsideAccount = true },
-                    onCloseHelp = { showHelpInsideAccount = false }
-                )
+                if (selectedIndex == SEARCH_INDEX && showSearchBar) {
+                    SearchBar(
+                        homeViewModel = homeViewModel,
+                        cartViewModel = cartViewModel,
+                        snackbarHostState = snackbarHostState,
+                        onClose = {
+                            showSearchBar = false
+                            selectedIndex = 0
+                        }
+                    )
+                }
+
+                when (selectedIndex) {
+                    0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel)
+                    1 -> PedidosScreen()
+                    2 -> OfertasScreen()
+                    3 -> CuentasScreen(
+                        navController,
+                        isLoggedIn,
+                        userName,
+                        onLogout = {
+                            isLoggedIn = false
+                            userName = ""
+                        },
+                        showHelp = showHelpInsideAccount,
+                        onHelpClick = { showHelpInsideAccount = true },
+                        onCloseHelp = { showHelpInsideAccount = false }
+                    )
+                }
             }
         }
     }
@@ -244,8 +263,8 @@ private fun CatalogoScreen(
     // Si tu HomeViewModel ya carga datos en init/setUserId, esto es suficiente.
     LaunchedEffect(Unit) {
         viewModel.setUserId(localUserId)
+        viewModel.fetchHomeData()
     }
-
     LaunchedEffect(uiState.message) {
         uiState.message?.let { message ->
             snackbarHostState.showSnackbar(
@@ -962,19 +981,12 @@ fun SearchBar(
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Filtrar productos basados en la búsqueda
-    val searchResults: List<ProductDto> = remember(query, uiState.categorias) {
+// Filtrar productos basados en la búsqueda
+    val searchResults: List<ProductDto> = remember(query, uiState.productos) {
         if (query.isEmpty()) {
-            emptyList<ProductDto>()
+            emptyList()
         } else {
-            // Aplana todas las categorías en una lista de productos
-            val allProducts = mutableListOf<ProductDto>()
-            uiState.categorias.forEach { category ->
-                allProducts.addAll(category.products)   // 👈 OJO: products en inglés
-            }
-
-            // Filtra por nombre (en inglés: name)
-            allProducts.filter { product: ProductDto ->
+            uiState.productos.filter { product ->
                 product.name.contains(query, ignoreCase = true)
             }
         }

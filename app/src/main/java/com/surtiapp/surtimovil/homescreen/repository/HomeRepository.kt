@@ -1,12 +1,19 @@
 package com.surtiapp.surtimovil.core.homescreen.repository
+
 import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
+import com.surtiapp.surtimovil.homescreen.model.dto.CategoryDto
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
+import retrofit2.Response
 
 class HomeRepository(private val api: HomeApi) {
 
-    suspend fun getCategories() = try {
-        val resp = api.getCategories()
-        if (resp.isSuccessful && resp.body()?.success == true) {
-            Result.success(resp.body()!!.categories)
+    suspend fun getCategories(): Result<List<CategoryDto>> = try {
+        val resp: Response<com.surtiapp.surtimovil.homescreen.model.dto.CategoryResponse> =
+            api.getCategories()
+        val body = resp.body()
+
+        if (resp.isSuccessful && body != null && body.success) {
+            Result.success(body.categories)
         } else {
             Result.failure(Exception("Error al obtener categorías"))
         }
@@ -14,10 +21,13 @@ class HomeRepository(private val api: HomeApi) {
         Result.failure(e)
     }
 
-    suspend fun getAllProducts() = try {
-        val resp = api.getAllProducts()
-        if (resp.isSuccessful && resp.body()?.success == true) {
-            Result.success(resp.body()!!.products)
+    suspend fun getAllProducts(): Result<List<ProductDto>> = try {
+        val resp: Response<com.surtiapp.surtimovil.homescreen.model.dto.ProductResponse> =
+            api.getAllProducts()
+        val body = resp.body()
+
+        if (resp.isSuccessful && body != null && body.success) {
+            Result.success(body.products)
         } else {
             Result.failure(Exception("Error al obtener productos"))
         }
@@ -25,10 +35,13 @@ class HomeRepository(private val api: HomeApi) {
         Result.failure(e)
     }
 
-    suspend fun getProductsByCategory(category: String) = try {
-        val resp = api.getProductsByCategory(category)
-        if (resp.isSuccessful && resp.body()?.success == true) {
-            Result.success(resp.body()!!.products)
+    suspend fun getProductsByCategory(category: String): Result<List<ProductDto>> = try {
+        val resp: Response<com.surtiapp.surtimovil.homescreen.model.dto.ProductResponse> =
+            api.getProductsByCategory(category)
+        val body = resp.body()
+
+        if (resp.isSuccessful && body != null && body.success) {
+            Result.success(body.products)
         } else {
             Result.failure(Exception("Error al obtener productos por categoría"))
         }

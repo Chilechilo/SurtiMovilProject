@@ -3,7 +3,8 @@ package com.surtiapp.surtimovil.core.homescreen.model.network
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
-import com.surtiapp.surtimovil.homescreen.model.dto.*
+import com.surtiapp.surtimovil.homescreen.model.dto.CategoryResponse
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductResponse
 
 interface HomeApi {
 
