@@ -98,7 +98,7 @@ fun HomeViewProducts(
                             )
                         }
 
-                        // 🔹 Mostrar carrito al final si hay productos
+                        //  Mostrar carrito al final si hay productos
                         if (productosCarrito.isNotEmpty()) {
                             item {
                                 Divider(Modifier.padding(vertical = 8.dp))

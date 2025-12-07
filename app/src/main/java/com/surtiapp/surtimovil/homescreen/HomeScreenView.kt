@@ -53,9 +53,25 @@ import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.home.views.HomeViewProducts
+import com.surtiapp.surtimovil.core.offers.views.OffersView
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.camera.core.ExperimentalGetImage
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
+import com.surtiapp.surtimovil.addcart.model.Producto
+import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
+import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
+import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModelFactory
+import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.homescreen.repository.OffersRepository
+import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -69,6 +85,8 @@ fun HomeScreenView(
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
     val cartViewModel: CartViewModel = viewModel()
+
+    val homeViewModel: HomeViewModel = viewModel(factory = homeViewModelFactory)
 
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
     var userName by rememberSaveable { mutableStateOf("Usuario") }
@@ -181,10 +199,15 @@ fun HomeScreenView(
         ) {
 
             if (selectedIndex == SEARCH_INDEX && showSearchBar) {
-                SearchBar(onClose = {
-                    showSearchBar = false
-                    selectedIndex = 0
-                })
+                SearchBar(
+                    homeViewModel = homeViewModel,
+                    cartViewModel = cartViewModel,
+                    snackbarHostState = snackbarHostState,
+                    onClose = {
+                        showSearchBar = false
+                        selectedIndex = 0
+                    }
+                )
             }
 
             when (selectedIndex) {
@@ -752,10 +775,12 @@ private fun AyudaScreen() {
 
 @Composable
 private fun OfertasScreen() {
-    CenterCard(
-        title = stringResource(R.string.offers_promotions_title),
-        body = stringResource(R.string.offers_promotions_body)
-    )
+    // Crear instancias del repositorio y ViewModel
+    val homeApi = RetrofitProvider.retrofit.create(HomeApi::class.java)
+    val offersRepository = OffersRepository(homeApi)
+    val viewModelFactory = OffersViewModelFactory(offersRepository)
+    val viewModel: OffersViewModel = viewModel(factory = viewModelFactory)
+    OffersView(viewModel = viewModel)
 }
 
 /* ======= Cuenta ======= */
@@ -919,42 +944,263 @@ fun RequestCameraPermission() {
 
 /* ======= Search Bar ======= */
 @Composable
-fun SearchBar(onClose: () -> Unit) {
+fun SearchBar(
+    homeViewModel: HomeViewModel,
+    cartViewModel: CartViewModel,
+    snackbarHostState: SnackbarHostState,
+    onClose: () -> Unit
+) {
     var query by rememberSaveable { mutableStateOf("") }
+    val uiState by homeViewModel.ui.collectAsState()
+    val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
-    Surface(
-        tonalElevation = 4.dp,
-        shadowElevation = 8.dp,
+    // Filtrar productos basados en la búsqueda
+    val searchResults = remember(query, uiState.categorias) {
+        if (query.isEmpty()) {
+            emptyList()
+        } else {
+            uiState.categorias.flatMap { category ->
+                category.productos.filter { product ->
+                    product.nombre.contains(query, ignoreCase = true)
+                }
+            }
+        }
+    }
+
+    Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        // Barra de búsqueda
+        Surface(
+            tonalElevation = 4.dp,
+            shadowElevation = 8.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(12.dp)
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Buscar",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(Modifier.width(12.dp))
+
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Buscar productos...") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Search
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSearch = { focusManager.clearFocus() }
+                    ),
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { query = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Limpiar")
+                            }
+                        }
+                    }
+                )
+
+                Spacer(Modifier.width(8.dp))
+
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar")
+                }
+            }
+        }
+
+        // Resultados de búsqueda
+        when {
+            query.isEmpty() -> {
+                // Estado inicial - sin búsqueda
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Buscar productos",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Escribe el nombre del producto que buscas",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+            searchResults.isEmpty() -> {
+                // No se encontraron resultados
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.SearchOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "No se encontraron productos",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Intenta con otro término de búsqueda",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+            else -> {
+                // Mostrar resultados
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "${searchResults.size} resultado${if (searchResults.size != 1) "s" else ""} encontrado${if (searchResults.size != 1) "s" else ""}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
+                    items(searchResults) { product ->
+                        SearchResultItem(
+                            product = product,
+                            onAddToCart = { productToAdd ->
+                                // Convertir Product a Producto para CartViewModel
+                                val productoParaCarrito = Producto(
+                                    id = productToAdd.id.toString(),
+                                    nombre = productToAdd.nombre,
+                                    descripcion = "",
+                                    precio = productToAdd.precio,
+                                    imageUrl = productToAdd.imagen,
+                                    cantidadEnCarrito = 1
+                                )
+                                cartViewModel.addCarrito(productoParaCarrito)
+
+                                // Mostrar snackbar de confirmación
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "¡${productToAdd.nombre} agregado con éxito!",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultItem(
+    product: Product,
+    onAddToCart: (Product) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Icon(
-                Icons.Default.Search,
-                stringResource(R.string.search_cd),
-                tint = MaterialTheme.colorScheme.primary
+            // Imagen del producto
+            AsyncImage(
+                model = product.imagen,
+                contentDescription = product.nombre,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
             )
 
             Spacer(Modifier.width(12.dp))
 
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text(stringResource(R.string.search_placeholder)) },
-                modifier = Modifier.weight(1f),
-                singleLine = true
-            )
+            // Información del producto
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = product.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = formatPrice(product.precio),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
             Spacer(Modifier.width(8.dp))
 
-            IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, stringResource(R.string.close_icon_cd))
+            // Botón de agregar al carrito
+            FilledTonalButton(
+                onClick = { onAddToCart(product) },
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Icon(
+                    Icons.Default.AddShoppingCart,
+                    contentDescription = "Agregar al carrito",
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+                Text("Agregar", style = MaterialTheme.typography.labelLarge)
             }
         }
     }
+}
+
+// Formateo de precios
+private fun formatPrice(price: Double): String {
+    val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
+    return format.format(price)
 }

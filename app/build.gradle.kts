@@ -97,6 +97,10 @@ dependencies {
     // --- Material Components (para compatibilidad) ---
     implementation("com.google.android.material:material:1.11.0")
 
+    // --- Accompanist Pager (para carousel) ---
+    implementation("com.google.accompanist:accompanist-pager:0.32.0")
+    implementation("com.google.accompanist:accompanist-pager-indicators:0.32.0")
+
     // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
