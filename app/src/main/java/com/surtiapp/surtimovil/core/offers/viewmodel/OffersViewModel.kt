@@ -2,8 +2,8 @@ package com.surtiapp.surtimovil.core.offers.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
-import com.surtiapp.surtimovil.homescreen.model.dto.Category
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
+import com.surtiapp.surtimovil.homescreen.model.dto.CategoryDto
 import com.surtiapp.surtimovil.homescreen.repository.OffersRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,9 +11,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-// Clase para asociar producto con su categoría
+// Relación producto + categoría
 data class ProductWithCategory(
-    val product: Product,
+    val product: ProductDto,
     val category: String
 )
 
@@ -40,41 +40,48 @@ class OffersViewModel(
 
     fun fetchOffers() {
         viewModelScope.launch {
+
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            repository.getOffers()
-                .onSuccess { response ->
-                    // Crear lista de productos con su categoría asociada
-                    val productsWithCategory = response.home.flatMap { category ->
-                        category.productos.map { product ->
-                            ProductWithCategory(
-                                product = product,
-                                category = category.categoria
-                            )
-                        }
-                    }
+            val productsResult = repository.getProducts()
+            val categoriesResult = repository.getCategories()
 
-                    // Extraer categorías únicas
-                    val categories = listOf("Todas") + response.home.map { it.categoria }.distinct().sorted()
+            if (productsResult.isSuccess && categoriesResult.isSuccess) {
 
-                    _uiState.update {
-                        it.copy(
-                            allProducts = productsWithCategory,
-                            filteredProducts = productsWithCategory,
-                            categories = categories,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
+                val products = productsResult.getOrDefault(emptyList<ProductDto>())
+                val categoriesDto = categoriesResult.getOrDefault(emptyList<CategoryDto>())
+
+                // Convertimos categorías a solo string
+                val categories = listOf("Todas") + categoriesDto
+                    .map { it.category }
+                    .sorted()
+
+                // Relación producto → categoría
+                val productWithCategoryList = products.map { product ->
+                    ProductWithCategory(
+                        product = product,
+                        category = product.category
+                    )
                 }
-                .onFailure { e ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = e.message ?: "Error al cargar ofertas"
-                        )
-                    }
+
+                _uiState.update {
+                    it.copy(
+                        allProducts = productWithCategoryList,
+                        filteredProducts = productWithCategoryList,
+                        categories = categories,
+                        isLoading = false,
+                        error = null
+                    )
                 }
+
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Error al obtener ofertas"
+                    )
+                }
+            }
         }
     }
 
@@ -89,14 +96,19 @@ class OffersViewModel(
     }
 
     private fun applyFilters() {
-        val currentState = _uiState.value
-        val filtered = currentState.allProducts.filter { productWithCategory ->
-            val matchesSearch = productWithCategory.product.nombre.contains(
-                currentState.searchQuery,
+        val current = _uiState.value
+
+        val filtered = current.allProducts.filter { item ->
+
+            val matchesSearch = item.product.name.contains(
+                current.searchQuery,
                 ignoreCase = true
             )
-            val matchesCategory = currentState.selectedCategory == "Todas" ||
-                    productWithCategory.category == currentState.selectedCategory
+
+            val matchesCategory =
+                current.selectedCategory == "Todas" ||
+                        item.category == current.selectedCategory
+
             matchesSearch && matchesCategory
         }
 

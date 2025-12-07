@@ -1,4 +1,4 @@
-package com.surtiapp.surtimovil.home.views
+package com.surtiapp.surtimovil.homescreen.home.views
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,10 +23,10 @@ import coil.compose.rememberAsyncImagePainter
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeUiState
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
-import com.surtiapp.surtimovil.homescreen.model.dto.Category
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
-import androidx.compose.foundation.BorderStroke
+import com.surtiapp.surtimovil.homescreen.model.dto.CategoryDto
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun HomeViewProducts(
@@ -39,13 +39,11 @@ fun HomeViewProducts(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { innerPadding ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(padding)
         ) {
             when {
                 uiState.isLoading -> {
@@ -56,10 +54,7 @@ fun HomeViewProducts(
 
                 uiState.error != null -> {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        Text(
-                            text = uiState.error,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                        Text(text = uiState.error ?: "Error", color = MaterialTheme.colorScheme.error)
                     }
                 }
 
@@ -70,84 +65,30 @@ fun HomeViewProducts(
                             .background(Color.White),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
-                        // 🔹 Mostrar categorías y productos
                         items(uiState.categorias) { category ->
                             CategoryRow(
                                 category = category,
+                                productos = uiState.productos.filter { it.category == category.category },
                                 onAddToCart = { product ->
-                                    // Crear objeto del carrito con ID único
                                     val productoCarrito =
                                         com.surtiapp.surtimovil.addcart.model.Producto(
-                                            id = "${category.categoria}_${product.id}",
-                                            nombre = product.nombre,
+                                            id = "${category.category}_${product.id}",
+                                            nombre = product.name,
                                             descripcion = "",
-                                            precio = product.precio,
-                                            imageUrl = product.imagen,
+                                            precio = product.price,
+                                            imageUrl = product.image,
                                             cantidadEnCarrito = 1
                                         )
                                     cartViewModel.addCarrito(productoCarrito)
 
-                                    // Mostrar Snackbar de confirmación
                                     scope.launch {
                                         snackbarHostState.showSnackbar(
-                                            message = "Añadido: ${product.nombre}",
+                                            message = "Añadido: ${product.name}",
                                             duration = SnackbarDuration.Short
                                         )
                                     }
                                 }
                             )
-                        }
-
-                        //  Mostrar carrito al final si hay productos
-                        if (productosCarrito.isNotEmpty()) {
-                            item {
-                                Divider(Modifier.padding(vertical = 8.dp))
-                                Text(
-                                    text = "🛒 Carrito (${productosCarrito.size})",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    modifier = Modifier.padding(16.dp)
-                                )
-
-                                productosCarrito.forEach { producto ->
-                                    Row(
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Text(producto.nombre)
-                                        Text(
-                                            text = "x${producto.cantidadEnCarrito}",
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                }
-
-                                val total = productosCarrito.sumOf {
-                                    it.precio * it.cantidadEnCarrito
-                                }
-
-                                Column(Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = "Total: $${"%.2f".format(total)}",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
-                                    Spacer(Modifier.height(12.dp))
-                                    Button(
-                                        onClick = {
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar("Gracias por tu compra 🛒✨")
-                                            }
-                                            cartViewModel.clearCarrito()
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Pagar")
-                                    }
-                                }
-                            }
                         }
                     }
                 }
@@ -158,8 +99,9 @@ fun HomeViewProducts(
 
 @Composable
 fun CategoryRow(
-    category: Category,
-    onAddToCart: (Product) -> Unit
+    category: CategoryDto,
+    productos: List<ProductDto>,
+    onAddToCart: (ProductDto) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -167,21 +109,20 @@ fun CategoryRow(
             .padding(vertical = 8.dp)
     ) {
         Text(
-            text = category.categoria,
+            text = category.category,
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 16.dp)
         )
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 8.dp),
-            horizontalArrangement = Arrangement.Center
+            horizontalArrangement = Arrangement.Start,
+            contentPadding = PaddingValues(horizontal = 8.dp)
         ) {
-            items(category.productos) { product ->
+            items(productos) { product ->
                 ProductCard(
                     product = product,
-                    onAddToCartClick = onAddToCart,
-                    modifier = Modifier.padding(horizontal = 6.dp)
+                    onAddToCartClick = onAddToCart
                 )
             }
         }
@@ -190,76 +131,60 @@ fun CategoryRow(
 
 @Composable
 fun ProductCard(
-    product: Product,
-    onAddToCartClick: (Product) -> Unit,
-    modifier: Modifier = Modifier
+    product: ProductDto,
+    onAddToCartClick: (ProductDto) -> Unit
 ) {
     Card(
-        modifier = modifier
+        modifier = Modifier
             .width(170.dp)
             .height(210.dp)
-            .padding(vertical = 4.dp),
+            .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        border = BorderStroke(1.dp, Color.Black)
+        elevation = CardDefaults.cardElevation(6.dp),
+        border = BorderStroke(1.dp, Color.LightGray)
     ) {
         Column(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
+            Image(
+                painter = rememberAsyncImagePainter(product.image),
+                contentDescription = product.name,
                 modifier = Modifier
-                    .height(110.dp)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(product.imagen),
-                    contentDescription = product.nombre,
-                    modifier = Modifier
-                        .size(110.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Fit
-                )
-            }
+                    .size(110.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Fit
+            )
 
             Text(
-                text = product.nombre,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                ),
-                modifier = Modifier.padding(top = 8.dp),
-                maxLines = 2
+                text = product.name,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 2,
+                modifier = Modifier.padding(top = 8.dp)
             )
 
             Row(
-                modifier = Modifier
+                Modifier
                     .fillMaxWidth()
-                    .padding(top = 2.dp),
+                    .padding(top = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$${"%.2f".format(product.precio)}",
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "$${"%.2f".format(product.price)}",
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Button(
                     onClick = { onAddToCartClick(product) },
                     modifier = Modifier.height(30.dp),
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                    contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
-                    Icon(
-                        Icons.Filled.AddShoppingCart,
-                        contentDescription = "Añadir al carrito",
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Filled.AddShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
                 }
             }
         }

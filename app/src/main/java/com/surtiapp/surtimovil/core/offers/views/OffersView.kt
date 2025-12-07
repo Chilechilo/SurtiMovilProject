@@ -28,7 +28,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.ProductWithCategory
 import java.text.NumberFormat
@@ -227,8 +227,8 @@ private fun OfferCard(
                         .weight(1f)
                 ) {
                     AsyncImage(
-                        model = product.imagen,
-                        contentDescription = product.nombre,
+                        model = product.image,
+                        contentDescription = product.name,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -301,7 +301,7 @@ private fun OfferCard(
 
                     // Nombre
                     Text(
-                        text = product.nombre,
+                        text = product.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
@@ -317,7 +317,7 @@ private fun OfferCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = formatPrice(product.precio),
+                            text = formatPrice(product.price),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary

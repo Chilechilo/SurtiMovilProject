@@ -30,48 +30,47 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 import com.surtiapp.surtimovil.R
+import com.surtiapp.surtimovil.addcart.model.Producto
+import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.core.delivery.viewmodel.DeliveryViewModel
+import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
+import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
+import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModelFactory
+import com.surtiapp.surtimovil.core.offers.views.OffersView
 import com.surtiapp.surtimovil.core.orders.model.Order
 import com.surtiapp.surtimovil.core.orders.model.OrderStatus
 import com.surtiapp.surtimovil.core.orders.viewmodel.OrdersViewModel
 import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.home.login.HomeViewModelFactory
-import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
-import com.surtiapp.surtimovil.home.views.HomeViewProducts
-import com.surtiapp.surtimovil.core.offers.views.OffersView
+import com.surtiapp.surtimovil.homescreen.home.views.HomeViewProducts
+import com.surtiapp.surtimovil.homescreen.model.dto.ProductDto
+import com.surtiapp.surtimovil.homescreen.repository.OffersRepository
+import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
 import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.launch
 import androidx.camera.core.ExperimentalGetImage
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
-import coil.compose.AsyncImage
-import com.surtiapp.surtimovil.addcart.model.Producto
-import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
-import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
-import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModelFactory
-import com.surtiapp.surtimovil.homescreen.model.dto.Product
-import com.surtiapp.surtimovil.homescreen.repository.OffersRepository
-import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -242,9 +241,9 @@ private fun CatalogoScreen(
     val uiState by viewModel.ui.collectAsState()
     val localUserId = remember { "local_user_001" }
 
+    // Si tu HomeViewModel ya carga datos en init/setUserId, esto es suficiente.
     LaunchedEffect(Unit) {
         viewModel.setUserId(localUserId)
-        viewModel.fetchHome()
     }
 
     LaunchedEffect(uiState.message) {
@@ -516,15 +515,15 @@ private fun OrderCard(order: Order) {
     var expanded by remember { mutableStateOf(false) }
 
     val containerColor = when (order.status) {
-        OrderStatus.DELIVERED -> Color(0xFFE8F5E9) // Verde claro
-        OrderStatus.PENDING -> Color(0xFFFFF9C4) // Amarillo claro
-        OrderStatus.CANCELLED -> Color(0xFFFFEBEE) // Rojo claro
+        OrderStatus.DELIVERED -> Color(0xFFE8F5E9)
+        OrderStatus.PENDING -> Color(0xFFFFF9C4)
+        OrderStatus.CANCELLED -> Color(0xFFFFEBEE)
     }
 
     val borderColor = when (order.status) {
-        OrderStatus.DELIVERED -> Color(0xFF4CAF50) // Verde
-        OrderStatus.PENDING -> Color(0xFFFFC107) // Amarillo
-        OrderStatus.CANCELLED -> Color(0xFFF44336) // Rojo
+        OrderStatus.DELIVERED -> Color(0xFF4CAF50)
+        OrderStatus.PENDING -> Color(0xFFFFC107)
+        OrderStatus.CANCELLED -> Color(0xFFF44336)
     }
 
     Card(
@@ -695,7 +694,11 @@ private fun generateQRCode(text: String): Bitmap {
     val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     for (x in 0 until size) {
         for (y in 0 until size) {
-            bmp.setPixel(x, y, if (bits[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+            bmp.setPixel(
+                x,
+                y,
+                if (bits[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE
+            )
         }
     }
     return bmp
@@ -732,7 +735,12 @@ fun QRScannerView(onQRCodeScanned: (String) -> Unit) {
 
                 try {
                     cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analyzer)
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        preview,
+                        analyzer
+                    )
                 } catch (e: Exception) {
                     Log.e("CameraX", "Error: ", e)
                 }
@@ -775,7 +783,6 @@ private fun AyudaScreen() {
 
 @Composable
 private fun OfertasScreen() {
-    // Crear instancias del repositorio y ViewModel
     val homeApi = RetrofitProvider.retrofit.create(HomeApi::class.java)
     val offersRepository = OffersRepository(homeApi)
     val viewModelFactory = OffersViewModelFactory(offersRepository)
@@ -956,14 +963,19 @@ fun SearchBar(
     val coroutineScope = rememberCoroutineScope()
 
     // Filtrar productos basados en la búsqueda
-    val searchResults = remember(query, uiState.categorias) {
+    val searchResults: List<ProductDto> = remember(query, uiState.categorias) {
         if (query.isEmpty()) {
-            emptyList()
+            emptyList<ProductDto>()
         } else {
-            uiState.categorias.flatMap { category ->
-                category.productos.filter { product ->
-                    product.nombre.contains(query, ignoreCase = true)
-                }
+            // Aplana todas las categorías en una lista de productos
+            val allProducts = mutableListOf<ProductDto>()
+            uiState.categorias.forEach { category ->
+                allProducts.addAll(category.products)   // 👈 OJO: products en inglés
+            }
+
+            // Filtra por nombre (en inglés: name)
+            allProducts.filter { product: ProductDto ->
+                product.name.contains(query, ignoreCase = true)
             }
         }
     }
@@ -1106,13 +1118,13 @@ fun SearchBar(
                         SearchResultItem(
                             product = product,
                             onAddToCart = { productToAdd ->
-                                // Convertir Product a Producto para CartViewModel
+                                // Convertir ProductDto a Producto para CartViewModel
                                 val productoParaCarrito = Producto(
                                     id = productToAdd.id.toString(),
-                                    nombre = productToAdd.nombre,
+                                    nombre = productToAdd.name,
                                     descripcion = "",
-                                    precio = productToAdd.precio,
-                                    imageUrl = productToAdd.imagen,
+                                    precio = productToAdd.price,
+                                    imageUrl = productToAdd.image,
                                     cantidadEnCarrito = 1
                                 )
                                 cartViewModel.addCarrito(productoParaCarrito)
@@ -1120,7 +1132,7 @@ fun SearchBar(
                                 // Mostrar snackbar de confirmación
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(
-                                        message = "¡${productToAdd.nombre} agregado con éxito!",
+                                        message = "¡${productToAdd.name} agregado con éxito!",
                                         duration = SnackbarDuration.Short
                                     )
                                 }
@@ -1135,8 +1147,8 @@ fun SearchBar(
 
 @Composable
 private fun SearchResultItem(
-    product: Product,
-    onAddToCart: (Product) -> Unit
+    product: ProductDto,
+    onAddToCart: (ProductDto) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1150,8 +1162,8 @@ private fun SearchResultItem(
         ) {
             // Imagen del producto
             AsyncImage(
-                model = product.imagen,
-                contentDescription = product.nombre,
+                model = product.image,
+                contentDescription = product.name,
                 modifier = Modifier
                     .size(60.dp)
                     .clip(RoundedCornerShape(8.dp)),
@@ -1165,7 +1177,7 @@ private fun SearchResultItem(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = product.nombre,
+                    text = product.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     maxLines = 2,
@@ -1173,7 +1185,7 @@ private fun SearchResultItem(
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = formatPrice(product.precio),
+                    text = formatPrice(product.price),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary

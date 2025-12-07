@@ -81,6 +81,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.3")
 
     // --- Face ID ---
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
