@@ -64,6 +64,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
 import com.surtiapp.surtimovil.addcart.model.Producto
 import com.surtiapp.surtimovil.core.homescreen.model.network.HomeApi
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
@@ -775,12 +776,27 @@ private fun AyudaScreen() {
 
 @Composable
 private fun OfertasScreen() {
-    // Crear instancias del repositorio y ViewModel
     val homeApi = RetrofitProvider.retrofit.create(HomeApi::class.java)
     val offersRepository = OffersRepository(homeApi)
     val viewModelFactory = OffersViewModelFactory(offersRepository)
     val viewModel: OffersViewModel = viewModel(factory = viewModelFactory)
-    OffersView(viewModel = viewModel)
+
+    // Obtener CartViewModel y SnackbarHostState del scope superior
+    val cartViewModel: CartViewModel = viewModel()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Scaffold para manejar el snackbar
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues)) {
+            com.surtiapp.surtimovil.core.offers.views.OffersView(
+                viewModel = viewModel,
+                cartViewModel = cartViewModel,
+                snackbarHostState = snackbarHostState
+            )
+        }
+    }
 }
 
 /* ======= Cuenta ======= */
@@ -955,6 +971,9 @@ fun SearchBar(
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
 
+    // Estado para el modal de producto
+    var selectedProduct by remember { mutableStateOf<Product?>(null) }
+
     // Filtrar productos basados en la búsqueda
     val searchResults = remember(query, uiState.categorias) {
         if (query.isEmpty()) {
@@ -966,6 +985,47 @@ fun SearchBar(
                 }
             }
         }
+    }
+
+    // Función para agregar al carrito con cantidad
+    val addToCartWithQuantity: (Product, Int) -> Unit = { product, quantity ->
+        // Agregar la cantidad especificada
+        repeat(quantity) {
+            val productoParaCarrito = Producto(
+                id = product.id.toString(),
+                nombre = product.nombre,
+                descripcion = "",
+                precio = product.precio,
+                imageUrl = product.imagen,
+                cantidadEnCarrito = 1
+            )
+            cartViewModel.addCarrito(productoParaCarrito)
+        }
+
+        // Mostrar snackbar
+        coroutineScope.launch {
+            val mensaje = if (quantity == 1) {
+                "¡${product.nombre} agregado con éxito!"
+            } else {
+                "¡$quantity unidades de ${product.nombre} agregadas!"
+            }
+            snackbarHostState.showSnackbar(
+                message = mensaje,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Mostrar modal si hay un producto seleccionado
+    selectedProduct?.let { product ->
+        ProductDetailModal(
+            product = product,
+            onDismiss = { selectedProduct = null },
+            onAddToCart = { prod, qty ->
+                addToCartWithQuantity(prod, qty)
+                selectedProduct = null
+            }
+        )
     }
 
     Column(
@@ -1106,24 +1166,8 @@ fun SearchBar(
                         SearchResultItem(
                             product = product,
                             onAddToCart = { productToAdd ->
-                                // Convertir Product a Producto para CartViewModel
-                                val productoParaCarrito = Producto(
-                                    id = productToAdd.id.toString(),
-                                    nombre = productToAdd.nombre,
-                                    descripcion = "",
-                                    precio = productToAdd.precio,
-                                    imageUrl = productToAdd.imagen,
-                                    cantidadEnCarrito = 1
-                                )
-                                cartViewModel.addCarrito(productoParaCarrito)
-
-                                // Mostrar snackbar de confirmación
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar(
-                                        message = "¡${productToAdd.nombre} agregado con éxito!",
-                                        duration = SnackbarDuration.Short
-                                    )
-                                }
+                                // Abrir el modal en lugar de agregar directamente
+                                selectedProduct = productToAdd
                             }
                         )
                     }

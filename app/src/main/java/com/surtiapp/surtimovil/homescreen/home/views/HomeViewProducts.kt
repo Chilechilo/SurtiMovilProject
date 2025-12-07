@@ -26,6 +26,7 @@ import com.surtiapp.surtimovil.homescreen.home.HomeViewModel
 import com.surtiapp.surtimovil.homescreen.model.dto.Category
 import com.surtiapp.surtimovil.homescreen.model.dto.Product
 import androidx.compose.foundation.BorderStroke
+import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
 import kotlinx.coroutines.launch
 
 @Composable
@@ -38,6 +39,49 @@ fun HomeViewProducts(
     val productosCarrito by cartViewModel.productosEnCarrito.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+
+    // Estado para el modal de producto
+    var selectedProduct by remember { mutableStateOf<Pair<Product, String>?>(null) }
+
+    // Función para agregar al carrito con cantidad
+    val addToCartWithQuantity: (Product, String, Int) -> Unit = { product, categoryName, quantity ->
+        repeat(quantity) {
+            val productoCarrito = com.surtiapp.surtimovil.addcart.model.Producto(
+                id = "${categoryName}_${product.id}",
+                nombre = product.nombre,
+                descripcion = "",
+                precio = product.precio,
+                imageUrl = product.imagen,
+                cantidadEnCarrito = 1
+            )
+            cartViewModel.addCarrito(productoCarrito)
+        }
+
+        // Mostrar Snackbar
+        scope.launch {
+            val mensaje = if (quantity == 1) {
+                "Añadido: ${product.nombre}"
+            } else {
+                "Añadidas $quantity unidades de ${product.nombre}"
+            }
+            snackbarHostState.showSnackbar(
+                message = mensaje,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Mostrar modal si hay un producto seleccionado
+    selectedProduct?.let { (product, categoryName) ->
+        ProductDetailModal(
+            product = product,
+            onDismiss = { selectedProduct = null },
+            onAddToCart = { prod, qty ->
+                addToCartWithQuantity(prod, categoryName, qty)
+                selectedProduct = null
+            }
+        )
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -70,35 +114,18 @@ fun HomeViewProducts(
                             .background(Color.White),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
-                        // 🔹 Mostrar categorías y productos
+                        // Mostrar categorías y productos
                         items(uiState.categorias) { category ->
                             CategoryRow(
                                 category = category,
                                 onAddToCart = { product ->
-                                    // Crear objeto del carrito con ID único
-                                    val productoCarrito =
-                                        com.surtiapp.surtimovil.addcart.model.Producto(
-                                            id = "${category.categoria}_${product.id}",
-                                            nombre = product.nombre,
-                                            descripcion = "",
-                                            precio = product.precio,
-                                            imageUrl = product.imagen,
-                                            cantidadEnCarrito = 1
-                                        )
-                                    cartViewModel.addCarrito(productoCarrito)
-
-                                    // Mostrar Snackbar de confirmación
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            message = "Añadido: ${product.nombre}",
-                                            duration = SnackbarDuration.Short
-                                        )
-                                    }
+                                    // Abrir modal en lugar de agregar directamente
+                                    selectedProduct = product to category.categoria
                                 }
                             )
                         }
 
-                        //  Mostrar carrito al final si hay productos
+                        // Mostrar carrito al final si hay productos
                         if (productosCarrito.isNotEmpty()) {
                             item {
                                 Divider(Modifier.padding(vertical = 8.dp))
