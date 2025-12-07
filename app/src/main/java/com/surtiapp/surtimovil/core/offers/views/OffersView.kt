@@ -29,16 +29,70 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.HorizontalPagerIndicator
 import com.google.accompanist.pager.rememberPagerState
 import com.surtiapp.surtimovil.homescreen.model.dto.Product
+import com.surtiapp.surtimovil.addcart.model.Producto
+import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.ProductWithCategory
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import com.surtiapp.surtimovil.addcart.model.ProductDetailModal
+import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalPagerApi::class)
 @Composable
-fun OffersView(viewModel: OffersViewModel) {
+fun OffersView(
+    viewModel: OffersViewModel,
+    cartViewModel: CartViewModel,
+    snackbarHostState: SnackbarHostState
+) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
+
+    // Estado para el modal de producto
+    var selectedProductWithCategory by remember { mutableStateOf<ProductWithCategory?>(null) }
+
+    // Función para agregar al carrito con cantidad
+    val addToCartWithQuantity: (ProductWithCategory, Int) -> Unit = { productWithCategory, quantity ->
+        repeat(quantity) {
+            val productoParaCarrito = Producto(
+                id = "${productWithCategory.category}_${productWithCategory.product.id}",
+                nombre = productWithCategory.product.nombre,
+                descripcion = "",
+                precio = productWithCategory.product.precio,
+                imageUrl = productWithCategory.product.imagen,
+                cantidadEnCarrito = 1
+            )
+            cartViewModel.addCarrito(productoParaCarrito)
+        }
+
+        // Mostrar snackbar
+        coroutineScope.launch {
+            val mensaje = if (quantity == 1) {
+                "¡${productWithCategory.product.nombre} agregado con éxito!"
+            } else {
+                "¡$quantity unidades de ${productWithCategory.product.nombre} agregadas!"
+            }
+            snackbarHostState.showSnackbar(
+                message = mensaje,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    // Mostrar modal si hay un producto seleccionado
+    selectedProductWithCategory?.let { productWithCategory ->
+        ProductDetailModal(
+            product = productWithCategory.product,
+            onDismiss = { selectedProductWithCategory = null },
+            onAddToCart = { _, qty ->
+                addToCartWithQuantity(productWithCategory, qty)
+                selectedProductWithCategory = null
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -96,6 +150,7 @@ fun OffersView(viewModel: OffersViewModel) {
                     ) { page ->
                         OfferCard(
                             productWithCategory = uiState.filteredProducts[page],
+                            onAddToCart = { selectedProductWithCategory = it },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp)
@@ -208,6 +263,7 @@ private fun CategoryFilters(
 @Composable
 private fun OfferCard(
     productWithCategory: ProductWithCategory,
+    onAddToCart: (ProductWithCategory) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val product = productWithCategory.product
@@ -341,7 +397,10 @@ private fun OfferCard(
 
                     // Botón de acción
                     Button(
-                        onClick = { /* TODO: Agregar al carrito */ },
+                        onClick = {
+                            // Abrir modal
+                            onAddToCart(productWithCategory)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
