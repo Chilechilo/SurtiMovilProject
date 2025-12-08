@@ -12,17 +12,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
+import com.surtiapp.surtimovil.core.orders.viewmodel.OrdersViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreen(viewModel: CartViewModel, onBack: () -> Unit) {
+fun CartScreen(
+    viewModel: CartViewModel,
+    ordersViewModel: OrdersViewModel,
+    onBack: () -> Unit
+) {
     val productos by viewModel.productosEnCarrito.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Mi carrito") },
-                navigationIcon = {                     // 👈 NUEVO
+                navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
@@ -31,7 +39,8 @@ fun CartScreen(viewModel: CartViewModel, onBack: () -> Unit) {
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -92,7 +101,7 @@ fun CartScreen(viewModel: CartViewModel, onBack: () -> Unit) {
                         }
                     }
 
-                    Divider()
+                    HorizontalDivider()
 
                     Column(
                         Modifier
@@ -111,7 +120,24 @@ fun CartScreen(viewModel: CartViewModel, onBack: () -> Unit) {
                         }
 
                         Button(
-                            onClick = { /* TODO: acción de pago */ },
+                            onClick = {
+                                // Crear pedido a partir del carrito
+                                ordersViewModel.createOrderFromCart(productos)
+
+                                // Mostrar mensaje de confirmación
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "¡Pedido realizado con éxito! 🛒✨",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+
+                                // Limpiar el carrito
+                                viewModel.clearCarrito()
+
+                                // Volver atrás
+                                onBack()
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 16.dp)
