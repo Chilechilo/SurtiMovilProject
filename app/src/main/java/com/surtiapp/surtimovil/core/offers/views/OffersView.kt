@@ -32,6 +32,7 @@ import com.surtiapp.surtimovil.addcart.model.Producto
 import com.surtiapp.surtimovil.addcart.viewmodel.CartViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.OffersViewModel
 import com.surtiapp.surtimovil.core.offers.viewmodel.ProductWithCategory
+import com.surtiapp.surtimovil.core.orders.viewmodel.OrdersViewModel
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -41,7 +42,9 @@ import java.util.Locale
 fun OffersView(
     viewModel: OffersViewModel,
     cartViewModel: CartViewModel,
-    snackbarHostState: SnackbarHostState
+    ordersViewModel: OrdersViewModel,
+    snackbarHostState: SnackbarHostState,
+    onNavigateToRecommendations: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
@@ -103,6 +106,12 @@ fun OffersView(
             query = uiState.searchQuery,
             onQueryChange = { viewModel.onSearchQueryChanged(it) },
             onSearch = { focusManager.clearFocus() }
+        )
+
+        // Botón "Para ti"
+        ForYouButton(
+            onClick = onNavigateToRecommendations,
+            recommendationsCount = ordersViewModel.getRecommendedProducts().size
         )
 
         // Filtros de categoría
@@ -176,6 +185,89 @@ fun OffersView(
                         modifier = Modifier
                             .align(Alignment.CenterHorizontally)
                             .padding(bottom = 16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ForYouButton(
+    onClick: () -> Unit,
+    recommendationsCount: Int
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        tonalElevation = 2.dp,
+        shadowElevation = 4.dp,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.tertiaryContainer
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent
+            ),
+            contentPadding = PaddingValues(16.dp),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(32.dp),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+
+                    Column {
+                        Text(
+                            text = "Para ti",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                        Text(
+                            text = "Recomendaciones personalizadas",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (recommendationsCount > 0) {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ) {
+                            Text(
+                                text = "$recommendationsCount",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Icon(
+                        Icons.Default.ArrowForward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer
                     )
                 }
             }

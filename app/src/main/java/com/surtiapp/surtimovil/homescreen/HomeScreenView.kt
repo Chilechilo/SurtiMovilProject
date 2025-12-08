@@ -93,6 +93,7 @@ fun HomeScreenView(
 
     var showHelpInsideAccount by rememberSaveable { mutableStateOf(false) }
     var showCart by rememberSaveable { mutableStateOf(false) }
+    var showRecommendations by rememberSaveable { mutableStateOf(false) }
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     val SEARCH_INDEX = 99
@@ -214,6 +215,17 @@ fun HomeScreenView(
                     ordersViewModel = ordersViewModel,
                     onBack = { showCart = false }
                 )
+            } else if (showRecommendations) {
+                // Obtener productos del catálogo para mapeo de imágenes
+                val catalogProducts by homeViewModel.ui.collectAsState()
+
+                // Mostrar pantalla de recomendaciones
+                com.surtiapp.surtimovil.core.offers.views.RecommendationsScreen(
+                    ordersViewModel = ordersViewModel,
+                    cartViewModel = cartViewModel,
+                    productsCatalog = catalogProducts.productos,
+                    onBack = { showRecommendations = false }
+                )
             } else {
 
                 if (selectedIndex == SEARCH_INDEX && showSearchBar) {
@@ -231,7 +243,10 @@ fun HomeScreenView(
                 when (selectedIndex) {
                     0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel)
                     1 -> PedidosScreen()
-                    2 -> OfertasScreen()
+                    2 -> OfertasScreen(
+                        ordersViewModel = ordersViewModel,
+                        onNavigateToRecommendations = { showRecommendations = true }
+                    )
                     3 -> CuentasScreen(
                         navController,
                         isLoggedIn,
@@ -804,7 +819,10 @@ private fun AyudaScreen() {
 }
 
 @Composable
-private fun OfertasScreen() {
+private fun OfertasScreen(
+    ordersViewModel: OrdersViewModel,
+    onNavigateToRecommendations: () -> Unit
+) {
     val homeApi = RetrofitProvider.retrofit.create(HomeApi::class.java)
     val offersRepository = OffersRepository(homeApi)
     val viewModelFactory = OffersViewModelFactory(offersRepository)
@@ -821,7 +839,9 @@ private fun OfertasScreen() {
             com.surtiapp.surtimovil.core.offers.views.OffersView(
                 viewModel = viewModel,
                 cartViewModel = cartViewModel,
-                snackbarHostState = snackbarHostState
+                ordersViewModel = ordersViewModel,
+                snackbarHostState = snackbarHostState,
+                onNavigateToRecommendations = onNavigateToRecommendations
             )
         }
     }
