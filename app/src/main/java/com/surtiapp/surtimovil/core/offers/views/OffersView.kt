@@ -59,7 +59,7 @@ fun OffersView(
             repeat(quantity) {
                 val p = productWithCategory.product
                 val productoParaCarrito = Producto(
-                    id = "${productWithCategory.category}_${p.id}",
+                    id = p.id.toString(),
                     nombre = p.name,
                     descripcion = "",
                     precio = p.price,

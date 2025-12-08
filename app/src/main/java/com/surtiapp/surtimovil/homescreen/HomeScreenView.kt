@@ -90,6 +90,7 @@ fun HomeScreenView(
 
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
     var userName by rememberSaveable { mutableStateOf("Usuario") }
+    var userToken by rememberSaveable { mutableStateOf<String?>(null) }
 
     var showHelpInsideAccount by rememberSaveable { mutableStateOf(false) }
     var showCart by rememberSaveable { mutableStateOf(false) }
@@ -107,6 +108,11 @@ fun HomeScreenView(
             if (fromLogin) {
                 isLoggedIn = true
                 userName = entry.savedStateHandle?.get<String>("username") ?: "Usuario"
+                userToken = entry.savedStateHandle?.get<String>("token")
+
+                userToken?.let { tokenNonNull ->
+                    ordersViewModel.fetchMyOrders(tokenNonNull)
+                }
             }
         }
     }
@@ -214,6 +220,7 @@ fun HomeScreenView(
                 CartScreen(
                     viewModel = cartViewModel,
                     ordersViewModel = ordersViewModel,
+                    userToken = userToken,
                     onBack = { showCart = false }
                 )
             } else if (showRecommendations) {
@@ -253,7 +260,10 @@ fun HomeScreenView(
 
                 when (selectedIndex) {
                     0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel)
-                    1 -> PedidosScreen()
+                    1 -> PedidosScreen(
+                        userToken = userToken,
+                        ordersViewModel = ordersViewModel
+                    )
                     2 -> OfertasScreen(
                         ordersViewModel = ordersViewModel,
                         onNavigateToRecommendations = { showRecommendations = true }
@@ -309,7 +319,10 @@ private fun CatalogoScreen(
 
 /* ======= Pedidos (Lista + QR Scanner + Generador) ======= */
 @Composable
-fun PedidosScreen() {
+fun PedidosScreen(
+    userToken: String?,
+    ordersViewModel: OrdersViewModel
+) {
     var showQRSection by rememberSaveable { mutableStateOf(false) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showScanner by rememberSaveable { mutableStateOf(false) }

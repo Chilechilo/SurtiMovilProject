@@ -84,17 +84,23 @@ fun LoginView(navController: NavController, activity: FragmentActivity) {
         vm.loginSuccessEvents.collectLatest {
             Log.d("LoginView", "✅ Login exitoso detectado")
 
-            // 🔥 Marca el login como exitoso para el Home
+            val token = vm.ui.value.authToken
+
+            // Marca el login como exitoso para el Home
             navController.previousBackStackEntry
                 ?.savedStateHandle
                 ?.set("loggedIn", true)
 
-            // Si tuvieras datos del usuario:
             navController.previousBackStackEntry
                 ?.savedStateHandle
-                ?.set("username", ui.email)
+                ?.set("username", vm.ui.value.email)
 
-            // Cierra el Login y vuelve al Home
+            // 🔥 Guardamos también el token
+            navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.set("token", token)
+
+            // Volver al Home
             navController.popBackStack()
         }
     }

@@ -24,16 +24,21 @@ class LoginViewModel(
     private val _toastEvents = Channel<String>(Channel.BUFFERED)
     val toastEvents = _toastEvents.receiveAsFlow()
 
-    // Evento de inicio de sesión exitoso
     private val _loginSuccessEvents = Channel<Unit>(Channel.BUFFERED)
     val loginSuccessEvents = _loginSuccessEvents.receiveAsFlow()
 
-    fun onEmailChange(v: String) { _ui.value = _ui.value.copy(email = v) }
-    fun onPasswordChange(v: String) { _ui.value = _ui.value.copy(password = v) }
+    fun onEmailChange(v: String) {
+        _ui.value = _ui.value.copy(email = v)
+    }
+
+    fun onPasswordChange(v: String) {
+        _ui.value = _ui.value.copy(password = v)
+    }
 
     fun login() {
         val email = _ui.value.email.trim()
         val password = _ui.value.password
+
         if (email.isBlank() || password.isBlank()) {
             viewModelScope.launch {
                 _toastEvents.send(app.getString(R.string.login_required_fields))
@@ -47,10 +52,22 @@ class LoginViewModel(
             try {
                 val res = repo.login(email, password)
                 if (res.success) {
-                    _toastEvents.send(
-                        app.getString(R.string.login_success, res.user?.name ?: "")
+
+                    // 🔹 GUARDA EL TOKEN EN EL ESTADO
+                    _ui.value = _ui.value.copy(
+                        // 👇 Ajusta "res.token" al nombre real del campo en tu LoginResponse
+                        authToken = res.token
                     )
-                    _loginSuccessEvents.send(Unit) // ⟵ dispara navegación
+
+                    _toastEvents.send(
+                        app.getString(
+                            R.string.login_success,
+                            res.user?.name ?: ""
+                        )
+                    )
+
+                    // 🔥 Dispara el evento para que la UI navegue
+                    _loginSuccessEvents.send(Unit)
                 } else {
                     _toastEvents.send(
                         res.message.ifBlank { app.getString(R.string.login_failed) }
@@ -63,11 +80,10 @@ class LoginViewModel(
             }
         }
     }
+
     fun loginWithBiometric() {
-        // Aquí puedes implementar lógica para auto-login,
-        // por ejemplo usando DataStore o SharedPreferences para recuperar token guardado
+        // Aquí deberías recuperar un token guardado (DataStore/SharedPreferences) si quieres usarlo.
         viewModelScope.launch {
-            // Simulación de éxito
             _loginSuccessEvents.send(Unit)
         }
     }
