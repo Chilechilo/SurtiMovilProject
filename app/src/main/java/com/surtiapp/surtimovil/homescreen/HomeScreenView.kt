@@ -71,6 +71,8 @@ import com.surtiapp.surtimovil.login.model.network.RetrofitProvider
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.camera.core.ExperimentalGetImage
+import com.surtiapp.surtimovil.core.datastore.DataStoreManager
+import com.surtiapp.surtimovil.core.orders.QRStateHolder
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -90,6 +92,7 @@ fun HomeScreenView(
 
     var isLoggedIn by rememberSaveable { mutableStateOf(false) }
     var userName by rememberSaveable { mutableStateOf("Usuario") }
+    var userToken by rememberSaveable { mutableStateOf<String?>(null) }
 
     var showHelpInsideAccount by rememberSaveable { mutableStateOf(false) }
     var showCart by rememberSaveable { mutableStateOf(false) }
@@ -107,6 +110,11 @@ fun HomeScreenView(
             if (fromLogin) {
                 isLoggedIn = true
                 userName = entry.savedStateHandle?.get<String>("username") ?: "Usuario"
+                userToken = entry.savedStateHandle?.get<String>("token")
+
+                userToken?.let { tokenNonNull ->
+                    ordersViewModel.fetchMyOrders(tokenNonNull)
+                }
             }
         }
     }
@@ -214,6 +222,7 @@ fun HomeScreenView(
                 CartScreen(
                     viewModel = cartViewModel,
                     ordersViewModel = ordersViewModel,
+                    userToken = userToken,
                     onBack = { showCart = false }
                 )
             } else if (showRecommendations) {
@@ -253,7 +262,10 @@ fun HomeScreenView(
 
                 when (selectedIndex) {
                     0 -> CatalogoScreen(homeViewModelFactory, snackbarHostState, cartViewModel)
-                    1 -> PedidosScreen()
+                    1 -> PedidosScreen(
+                        userToken = userToken,
+                        ordersViewModel = ordersViewModel
+                    )
                     2 -> OfertasScreen(
                         ordersViewModel = ordersViewModel,
                         onNavigateToRecommendations = { showRecommendations = true }
@@ -309,7 +321,10 @@ private fun CatalogoScreen(
 
 /* ======= Pedidos (Lista + QR Scanner + Generador) ======= */
 @Composable
-fun PedidosScreen() {
+fun PedidosScreen(
+    userToken: String?,
+    ordersViewModel: OrdersViewModel
+) {
     var showQRSection by rememberSaveable { mutableStateOf(false) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showScanner by rememberSaveable { mutableStateOf(false) }
@@ -317,15 +332,28 @@ fun PedidosScreen() {
     val deliveryViewModel = remember { DeliveryViewModel() }
     val deliveryUiState by deliveryViewModel.ui.collectAsState()
 
-    val ordersViewModel: OrdersViewModel = viewModel()
     val ordersUiState by ordersViewModel.uiState.collectAsState()
 
+    // ⬅️ Cargamos el rol REAL del usuario desde DataStore
+    val dataStore = DataStoreManager(LocalContext.current)
+    val userRole by dataStore.userRoleFlow.collectAsState(initial = "user")
+    val qrState by QRStateHolder.qrImage.collectAsState()
+    LaunchedEffect(qrState) {
+        if (qrState != null) {
+            qrBitmap = qrState
+            showQRSection = true
+            showScanner = false
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Título y botones QR
+
+        /* ===========================================
+           SECCIÓN SUPERIOR (ROL-DEPENDIENTE)
+        ============================================ */
         Surface(
             modifier = Modifier.fillMaxWidth(),
             tonalElevation = 2.dp,
@@ -347,35 +375,27 @@ fun PedidosScreen() {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedButton(
-                        onClick = {
-                            val orderId = "order_12345"
-                            qrBitmap = generateQRCode(orderId)
-                            showQRSection = true
-                            showScanner = false
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.QrCode, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.generate_qr_button))
-                    }
 
-                    Button(
-                        onClick = {
-                            showScanner = true
-                            showQRSection = true
-                            qrBitmap = null
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.scan_qr_button))
+                    /* SUPERUSER NO PUEDE ESCANEAR QR */
+                    if (userRole != "superuser") {
+                        Button(
+                            onClick = {
+                                showScanner = true
+                                showQRSection = true
+                                qrBitmap = null
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.CameraAlt, null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Escanear QR")
+                        }
                     }
                 }
 
-                // Sección QR (colapsable)
+                /* =====================================
+                   SECCIÓN QR (VISIBLE SI showQRSection)
+                ====================================== */
                 AnimatedVisibility(visible = showQRSection) {
                     Column(
                         modifier = Modifier
@@ -383,6 +403,8 @@ fun PedidosScreen() {
                             .padding(top = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+
+                        // Mostrar QR generado (ADMIN)
                         if (!showScanner && qrBitmap != null) {
                             Card(
                                 modifier = Modifier.size(220.dp),
@@ -403,6 +425,7 @@ fun PedidosScreen() {
                             }
                         }
 
+                        // Mostrar escáner (TODOS)
                         if (showScanner) {
                             RequestCameraPermission()
                             Card(
@@ -421,7 +444,9 @@ fun PedidosScreen() {
 
                         Spacer(Modifier.height(12.dp))
 
-                        // Estado de entrega
+                        /* ======================
+                           ESTADO DE ENTREGA
+                        ====================== */
                         when {
                             deliveryUiState.loading -> {
                                 Row(
@@ -433,72 +458,25 @@ fun PedidosScreen() {
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        stringResource(R.string.verifying_delivery),
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
+                                    Text("Verificando entrega…")
                                 }
                             }
 
                             deliveryUiState.success == true -> {
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            deliveryUiState.message ?: "",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
-                                    }
-                                }
+                                SuccessMessage(deliveryUiState.message ?: "")
                             }
 
                             deliveryUiState.success == false -> {
-                                Card(
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Error,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.error
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            deliveryUiState.message ?: "",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onErrorContainer
-                                        )
-                                    }
-                                }
+                                ErrorMessage(deliveryUiState.message ?: "")
                             }
                         }
 
-                        if (showQRSection) {
-                            TextButton(onClick = {
-                                showQRSection = false
-                                showScanner = false
-                                qrBitmap = null
-                            }) {
-                                Text(stringResource(R.string.close_icon_cd))
-                            }
+                        TextButton(onClick = {
+                            showQRSection = false
+                            showScanner = false
+                            qrBitmap = null
+                        }) {
+                            Text("Cerrar")
                         }
                     }
                 }
@@ -507,7 +485,7 @@ fun PedidosScreen() {
 
         Spacer(Modifier.height(8.dp))
 
-        // Lista de pedidos
+        // ⬅️ MOSTRAR LISTA DE PEDIDOS
         OrdersList(orders = ordersUiState.orders)
     }
 }
@@ -559,9 +537,14 @@ private fun OrdersList(orders: List<Order>) {
 }
 
 /* ======= Tarjeta de Pedido ======= */
+/* ======= Tarjeta de Pedido (con botón Generar QR por pedido) ======= */
 @Composable
 private fun OrderCard(order: Order) {
     var expanded by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val dataStore = DataStoreManager(context)
+    val userRole by dataStore.userRoleFlow.collectAsState(initial = "user")
 
     val containerColor = when (order.status) {
         OrderStatus.DELIVERED -> Color(0xFFE8F5E9)
@@ -644,13 +627,14 @@ private fun OrderCard(order: Order) {
                 }
             }
 
-            // Lista de productos (expandible)
+            // Lista expandible
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
                 Column(modifier = Modifier.padding(top = 12.dp)) {
+
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         color = borderColor.copy(alpha = 0.3f)
@@ -667,6 +651,28 @@ private fun OrderCard(order: Order) {
                         ProductItem(product = product)
                         Spacer(Modifier.height(8.dp))
                     }
+
+                    /* ==========================================================
+                       BOTÓN GENERAR QR (solo admin / superuser)
+                    ========================================================== */
+                    if (userRole == "admin" || userRole == "superuser") {
+                        Spacer(Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                val qr = generateQRCode(order.id)
+                                com.surtiapp.surtimovil.core.orders.QRStateHolder.setQR(qr)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.QrCode, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Generar QR de este pedido")
+                        }
+                    }
                 }
             }
 
@@ -681,6 +687,7 @@ private fun OrderCard(order: Order) {
         }
     }
 }
+
 
 /* ======= Item de Producto ======= */
 @Composable
@@ -1291,4 +1298,40 @@ private fun SearchResultItem(
 private fun formatPrice(price: Double): String {
     val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
     return format.format(price)
+}
+
+@Composable
+private fun SuccessMessage(msg: String) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(msg)
+        }
+    }
+}
+
+@Composable
+private fun ErrorMessage(msg: String) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Error, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(msg)
+        }
+    }
 }

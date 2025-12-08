@@ -15,7 +15,8 @@ data class LoginResponse(
 data class User(
     val id: String,
     val name: String,
-    val email: String
+    val email: String,
+    val role: String
 )
 
 data class SignUpRequest(
