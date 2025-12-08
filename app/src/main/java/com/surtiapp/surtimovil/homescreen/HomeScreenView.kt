@@ -72,6 +72,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.camera.core.ExperimentalGetImage
 import com.surtiapp.surtimovil.core.datastore.DataStoreManager
+import com.surtiapp.surtimovil.core.orders.QRStateHolder
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -336,7 +337,14 @@ fun PedidosScreen(
     // ⬅️ Cargamos el rol REAL del usuario desde DataStore
     val dataStore = DataStoreManager(LocalContext.current)
     val userRole by dataStore.userRoleFlow.collectAsState(initial = "user")
-
+    val qrState by QRStateHolder.qrImage.collectAsState()
+    LaunchedEffect(qrState) {
+        if (qrState != null) {
+            qrBitmap = qrState
+            showQRSection = true
+            showScanner = false
+        }
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -368,39 +376,20 @@ fun PedidosScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
 
-                    /* =============================
-                       BOTÓN GENERAR QR (SOLO ADMIN)
-                    ============================== */
-                    if (userRole == "admin" || userRole == "superuser") {
-                        OutlinedButton(
+                    /* SUPERUSER NO PUEDE ESCANEAR QR */
+                    if (userRole != "superuser") {
+                        Button(
                             onClick = {
-                                val orderId = "order_12345"   // TEMPORAL (luego conectamos real)
-                                qrBitmap = generateQRCode(orderId)
+                                showScanner = true
                                 showQRSection = true
-                                showScanner = false
+                                qrBitmap = null
                             },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(Icons.Default.QrCode, null, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CameraAlt, null)
                             Spacer(Modifier.width(4.dp))
-                            Text("Generar QR")
+                            Text("Escanear QR")
                         }
-                    }
-
-                    /* =============================
-                       BOTÓN ESCANEAR QR (TODOS)
-                    ============================== */
-                    Button(
-                        onClick = {
-                            showScanner = true
-                            showQRSection = true
-                            qrBitmap = null
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Icon(Icons.Default.CameraAlt, null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Escanear QR")
                     }
                 }
 
@@ -501,7 +490,6 @@ fun PedidosScreen(
     }
 }
 
-
 /* ======= Lista de Pedidos ======= */
 @Composable
 private fun OrdersList(orders: List<Order>) {
@@ -549,9 +537,14 @@ private fun OrdersList(orders: List<Order>) {
 }
 
 /* ======= Tarjeta de Pedido ======= */
+/* ======= Tarjeta de Pedido (con botón Generar QR por pedido) ======= */
 @Composable
 private fun OrderCard(order: Order) {
     var expanded by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val dataStore = DataStoreManager(context)
+    val userRole by dataStore.userRoleFlow.collectAsState(initial = "user")
 
     val containerColor = when (order.status) {
         OrderStatus.DELIVERED -> Color(0xFFE8F5E9)
@@ -634,13 +627,14 @@ private fun OrderCard(order: Order) {
                 }
             }
 
-            // Lista de productos (expandible)
+            // Lista expandible
             AnimatedVisibility(
                 visible = expanded,
                 enter = expandVertically(),
                 exit = shrinkVertically()
             ) {
                 Column(modifier = Modifier.padding(top = 12.dp)) {
+
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         color = borderColor.copy(alpha = 0.3f)
@@ -657,6 +651,28 @@ private fun OrderCard(order: Order) {
                         ProductItem(product = product)
                         Spacer(Modifier.height(8.dp))
                     }
+
+                    /* ==========================================================
+                       BOTÓN GENERAR QR (solo admin / superuser)
+                    ========================================================== */
+                    if (userRole == "admin" || userRole == "superuser") {
+                        Spacer(Modifier.height(16.dp))
+
+                        Button(
+                            onClick = {
+                                val qr = generateQRCode(order.id)
+                                com.surtiapp.surtimovil.core.orders.QRStateHolder.setQR(qr)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Icon(Icons.Default.QrCode, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Generar QR de este pedido")
+                        }
+                    }
                 }
             }
 
@@ -671,6 +687,7 @@ private fun OrderCard(order: Order) {
         }
     }
 }
+
 
 /* ======= Item de Producto ======= */
 @Composable
