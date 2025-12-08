@@ -2,6 +2,7 @@ package com.surtiapp.surtimovil.login.model.repository
 
 import android.app.Application
 import com.surtiapp.surtimovil.R
+import com.surtiapp.surtimovil.core.datastore.DataStoreManager
 import com.surtiapp.surtimovil.login.model.LoginRequest
 import com.surtiapp.surtimovil.login.model.LoginResponse
 import com.surtiapp.surtimovil.login.model.SignUpRequest
@@ -18,7 +19,20 @@ class AuthRepository(
         return try {
             val resp = api.login(LoginRequest(email, password))
             if (resp.isSuccessful) {
-                resp.body() ?: LoginResponse(false, app.getString(R.string.auth_empty_response))
+                val body = resp.body()
+
+                if (body != null && body.success && body.user != null) {
+
+                    val dataStore = DataStoreManager(app)
+
+                    // Guardamos token y rol
+                    dataStore.saveAuthToken(body.token ?: "")
+                    dataStore.saveUserRole(body.user.role)
+
+                    return body
+                }
+
+                body ?: LoginResponse(false, app.getString(R.string.auth_empty_response))
             } else {
                 val raw = resp.errorBody()?.string().orEmpty()
                 val parsed = try {
