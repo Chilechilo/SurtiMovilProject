@@ -94,6 +94,7 @@ fun HomeScreenView(
     var showHelpInsideAccount by rememberSaveable { mutableStateOf(false) }
     var showCart by rememberSaveable { mutableStateOf(false) }
     var showRecommendations by rememberSaveable { mutableStateOf(false) }
+    var showDashboard by rememberSaveable { mutableStateOf(false) }
 
     var showSearchBar by rememberSaveable { mutableStateOf(false) }
     val SEARCH_INDEX = 99
@@ -226,6 +227,16 @@ fun HomeScreenView(
                     productsCatalog = catalogProducts.productos,
                     onBack = { showRecommendations = false }
                 )
+            } else if (showDashboard) {
+                // Obtener productos del catálogo para el dashboard
+                val catalogProducts by homeViewModel.ui.collectAsState()
+
+                // Mostrar pantalla de dashboard
+                com.surtiapp.surtimovil.core.user.views.UserDashboardScreen(
+                    ordersViewModel = ordersViewModel,
+                    productsCatalog = catalogProducts.productos,
+                    onBack = { showDashboard = false }
+                )
             } else {
 
                 if (selectedIndex == SEARCH_INDEX && showSearchBar) {
@@ -257,7 +268,8 @@ fun HomeScreenView(
                         },
                         showHelp = showHelpInsideAccount,
                         onHelpClick = { showHelpInsideAccount = true },
-                        onCloseHelp = { showHelpInsideAccount = false }
+                        onCloseHelp = { showHelpInsideAccount = false },
+                        onDashboardClick = { showDashboard = true }
                     )
                 }
             }
@@ -856,7 +868,8 @@ private fun CuentasScreen(
     onLogout: () -> Unit,
     showHelp: Boolean,
     onHelpClick: () -> Unit,
-    onCloseHelp: () -> Unit
+    onCloseHelp: () -> Unit,
+    onDashboardClick: () -> Unit
 ) {
     if (showHelp) {
         Column(
@@ -902,6 +915,17 @@ private fun CuentasScreen(
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(top = 8.dp, bottom = 20.dp)
             )
+
+            Button(
+                onClick = { onDashboardClick() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.BarChart, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Mi Dashboard")
+            }
+
+            Spacer(Modifier.height(12.dp))
 
             OutlinedButton(
                 onClick = { onHelpClick() },
